@@ -1,0 +1,2357 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Monte Carlo simulator for LucidFlex $50K funded accounts using the $50,100 locked MLL and $54,100 max-payout target.">
+  <title>LucidFlex 50K Monte Carlo</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1220'/%3E%3Cpath d='M12 45h40M16 39l9-10 8 6 15-18' fill='none' stroke='%2338d9a9' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #070b13;
+      --panel: #0e1523;
+      --panel-2: #111b2c;
+      --line: #253148;
+      --text: #f3f7fc;
+      --muted: #99a8bf;
+      --green: #38d9a9;
+      --green-soft: rgba(56, 217, 169, .14);
+      --red: #ff7188;
+      --red-soft: rgba(255, 113, 136, .13);
+      --blue: #70a5ff;
+      --amber: #ffc857;
+      --focus: #a8c7ff;
+      --radius: 18px;
+      --page-gutter: clamp(132px, 8vw, 156px);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      padding: 0 0 96px;
+      background:
+        radial-gradient(circle at 82% -10%, rgba(56, 217, 169, .12), transparent 32rem),
+        radial-gradient(circle at -10% 30%, rgba(112, 165, 255, .09), transparent 28rem),
+        var(--bg);
+      color: var(--text);
+    }
+
+    button, input, select { font: inherit; }
+
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .app {
+      width: calc(100% - var(--page-gutter) - var(--page-gutter));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--green);
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 4vw, 3.1rem);
+      line-height: 1.02;
+      letter-spacing: -.045em;
+    }
+
+    .subtitle {
+      max-width: 720px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.55;
+    }
+
+    .rule-chip {
+      flex: 0 0 auto;
+      padding: 10px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(14, 21, 35, .7);
+      color: var(--muted);
+      font-size: .82rem;
+      white-space: nowrap;
+    }
+
+    .rule-chip strong { color: var(--text); }
+
+    .layout {
+      --controls-width: clamp(390px, 28vw, 450px);
+      display: grid;
+      grid-template-columns: var(--controls-width) minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgba(17, 27, 44, .94), rgba(10, 16, 27, .94));
+      box-shadow: 0 22px 55px rgba(0, 0, 0, .24);
+    }
+
+    .controls {
+      position: static;
+      width: auto;
+      padding: 16px;
+    }
+
+    .main { grid-column: 2; }
+
+    #sim-form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 10px;
+    }
+
+    .strategy-risk { grid-area: 1 / 1; }
+    .strategy-rr { grid-area: 1 / 2; }
+    .strategy-win { grid-area: 2 / 1; }
+    .strategy-simulations { grid-area: 2 / 2; }
+
+    .strategy-trades {
+      display: grid;
+      grid-area: 3 / 1 / auto / 3;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 10px;
+      align-items: end;
+    }
+
+    .strategy-trades > .field-head { grid-column: 1 / -1; }
+    .strategy-trades > .field { margin-top: 0; }
+    .strategy-trades > .split-fields { gap: 8px; }
+    .strategy-trades > .split-fields .field { margin-top: 0; }
+
+    #sim-form > .execution-card,
+    #sim-form > .derived,
+    #sim-form > .actions,
+    #sim-form > .error {
+      grid-column: 1 / -1;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: -.01em;
+    }
+
+    .section-note {
+      margin: 5px 0 8px;
+      color: var(--muted);
+      font-size: .83rem;
+      line-height: 1.45;
+    }
+
+    .field { margin-top: 15px; }
+
+    #sim-form > .field { margin-top: 8px; }
+
+    .field-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      align-items: flex-start;
+      margin-bottom: 7px;
+    }
+
+    .controls .field-head label {
+      min-width: 0;
+      font-size: .81rem;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .controls .field-head .hint {
+      flex: 0 0 auto;
+      font-size: .72rem;
+      line-height: 1.2;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .strategy-risk > .field-head,
+    .strategy-rr > .field-head,
+    .strategy-win > .field-head,
+    .strategy-simulations > .field-head,
+    .execution-card > .field > .field-head {
+      min-height: 18px;
+    }
+
+    label {
+      color: #dfe8f5;
+      font-size: .86rem;
+      font-weight: 650;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: .74rem;
+    }
+
+    .input-wrap { position: relative; }
+
+    select {
+      width: 100%;
+      min-height: 44px;
+      padding: 9px 34px 9px 11px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #09101d;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    #execution-product {
+      padding-right: 28px;
+      font-size: .78rem;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 44px 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #09101d;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="number"]:hover { border-color: #3b4c68; }
+
+    .split-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .split-fields .field { margin-top: 10px; }
+
+    .execution-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(145px, .75fr);
+      column-gap: 10px;
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(7, 11, 19, .38);
+    }
+
+    .execution-title { margin: 0 0 4px; font-size: .86rem; }
+
+    .execution-title,
+    .execution-note,
+    .execution-card > .toggle-row,
+    .execution-card > .subfields {
+      grid-column: 1 / -1;
+    }
+
+    .execution-note {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: .72rem;
+      line-height: 1.45;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-top: 13px;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .toggle-row input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      accent-color: var(--green);
+      cursor: pointer;
+    }
+
+    .toggle-row span { font-size: .82rem; font-weight: 700; }
+
+    .subfields {
+      margin: 10px 0 0 27px;
+      padding-left: 10px;
+      border-left: 2px solid rgba(56, 217, 169, .18);
+    }
+
+    .subfields .field:first-child { margin-top: 0; }
+    [hidden] { display: none !important; }
+
+    #custom-spec-fields {
+      margin-left: 0;
+      padding-left: 0;
+      border-left: 0;
+    }
+
+    #custom-spec-fields .split-fields {
+      grid-template-columns: minmax(0, 1.25fr) minmax(145px, .75fr);
+      gap: 10px;
+    }
+
+    #custom-spec-fields .split-fields .field { margin-top: 0; }
+
+    .micro-note {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: .68rem;
+      line-height: 1.4;
+    }
+
+    .micro-note a { color: var(--blue); }
+
+    .suffix {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      color: var(--muted);
+      font-size: .8rem;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .derived {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 10px;
+    }
+
+    .derived > div {
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(7, 11, 19, .42);
+    }
+
+    .derived span {
+      display: block;
+      color: var(--muted);
+      font-size: .72rem;
+      margin-bottom: 3px;
+    }
+
+    .derived strong {
+      font-size: .95rem;
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      position: fixed;
+      left: calc(100% - var(--page-gutter) + 10px);
+      right: 10px;
+      bottom: 8px;
+      z-index: 100000;
+      isolation: isolate;
+      width: auto;
+      margin: 0;
+      padding: 6px;
+      border: 1px solid #40506a;
+      border-radius: 12px;
+      background: #0b1321;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, .62);
+    }
+
+    .run, .reset {
+      min-height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .74rem;
+      font-weight: 750;
+    }
+
+    .run {
+      border: 0;
+      background: var(--green);
+      color: #04130e;
+      padding: 7px 4px;
+    }
+
+    .run:hover { filter: brightness(1.06); }
+    .run:disabled { cursor: wait; opacity: .62; }
+
+    .reset {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      padding: 7px 4px;
+    }
+
+    .reset:hover { color: var(--text); border-color: #3b4c68; }
+
+    .error {
+      display: none;
+      margin: 12px 0 0;
+      color: var(--red);
+      font-size: .8rem;
+      line-height: 1.4;
+    }
+
+    .error.show { display: block; }
+
+    .main { min-width: 0; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .metric {
+      min-height: 118px;
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: rgba(14, 21, 35, .78);
+    }
+
+    .metric .label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: .76rem;
+      font-weight: 650;
+    }
+
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); }
+    .pass .dot { background: var(--green); }
+    .fail .dot { background: var(--red); }
+
+    .value {
+      display: block;
+      margin-top: 12px;
+      font-size: clamp(1.45rem, 3vw, 2.15rem);
+      font-weight: 750;
+      letter-spacing: -.045em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: .73rem;
+      line-height: 1.3;
+    }
+
+    .results-panel { padding: 20px; }
+
+    .results-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: .78rem;
+      text-align: right;
+      line-height: 1.4;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .outcome-bar {
+      display: flex;
+      width: 100%;
+      height: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #1c2637;
+      margin-bottom: 19px;
+    }
+
+    .outcome-pass { width: 0; background: var(--green); transition: width .35s ease; }
+    .outcome-fail { width: 0; background: var(--red); transition: width .35s ease; }
+    .outcome-timeout { width: 0; background: var(--amber); transition: width .35s ease; }
+
+    .timing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .timing {
+      padding: 13px 14px;
+      border-left: 2px solid var(--blue);
+      background: rgba(112, 165, 255, .055);
+    }
+
+    .timing span {
+      display: block;
+      color: var(--muted);
+      font-size: .74rem;
+      margin-bottom: 4px;
+    }
+
+    .timing strong {
+      font-size: 1.12rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .chart-wrap {
+      position: relative;
+      min-height: 330px;
+      border-top: 1px solid var(--line);
+      padding-top: 20px;
+    }
+
+    .chart-title {
+      margin: 0 0 2px;
+      font-size: .92rem;
+    }
+
+    .chart-caption {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: .76rem;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 270px;
+    }
+
+    .chart-empty {
+      position: absolute;
+      inset: 95px 0 0;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: .86rem;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .life-wrap { margin-top: 22px; }
+
+    .life-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 11px;
+    }
+
+    .life-outcome {
+      flex: 0 0 auto;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: var(--green-soft);
+      color: var(--green);
+      font-size: .76rem;
+      font-weight: 750;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .life-outcome.breached {
+      background: var(--red-soft);
+      color: var(--red);
+    }
+
+    .life-outcome.unresolved {
+      background: rgba(255, 200, 87, .12);
+      color: var(--amber);
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 13px;
+      margin: 0;
+      color: var(--muted);
+      font-size: .74rem;
+    }
+
+    .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+
+    .legend-line {
+      width: 19px;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--blue);
+    }
+
+    .legend-line.mll { background: var(--red); }
+    .legend-line.target { background: var(--amber); }
+
+    .life-tools {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 10px 0 11px;
+    }
+
+    .zoom-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--muted);
+      font-size: .76rem;
+    }
+
+    .zoom-control label { color: var(--muted); font-size: .76rem; }
+
+    .zoom-control input[type="range"] {
+      width: 118px;
+      accent-color: var(--green);
+      cursor: pointer;
+    }
+
+    .zoom-value {
+      min-width: 25px;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .life-chart-shell { position: relative; }
+
+    .life-scroll {
+      max-width: 100%;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scrollbar-color: var(--line) transparent;
+      scrollbar-width: thin;
+    }
+
+    .life-scroll canvas {
+      width: 100%;
+      height: 320px;
+    }
+
+    .hist-tooltip,
+    .life-tooltip {
+      position: absolute;
+      z-index: 4;
+      width: max-content;
+      max-width: min(270px, calc(100vw - 44px));
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #080f1b;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, .42);
+      color: var(--text);
+      font-size: .76rem;
+      line-height: 1.45;
+      pointer-events: none;
+    }
+
+    .hist-tooltip[hidden],
+    .life-tooltip[hidden] { display: none; }
+
+    .hist-tooltip strong,
+    .life-tooltip strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: .8rem;
+    }
+
+    .life-tooltip-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .life-tooltip-row span:first-child { color: var(--muted); }
+    .hist-tooltip .positive,
+    .life-tooltip .positive { color: var(--green); }
+    .hist-tooltip .negative,
+    .life-tooltip .negative { color: var(--red); }
+
+    .outcome-legend { margin-bottom: 10px; }
+
+    .life-help {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: .72rem;
+      line-height: 1.4;
+    }
+
+    .assumptions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .assumption {
+      padding: 12px 13px;
+      color: var(--muted);
+      font-size: .76rem;
+      line-height: 1.45;
+    }
+
+    .assumption strong { color: var(--text); font-weight: 650; }
+
+    .timeout-note {
+      display: none;
+      margin: 14px 0 0;
+      padding: 11px 12px;
+      border: 1px solid rgba(255, 200, 87, .28);
+      border-radius: 10px;
+      background: rgba(255, 200, 87, .08);
+      color: #ffe0a0;
+      font-size: .78rem;
+      line-height: 1.45;
+    }
+
+    .timeout-note.show { display: block; }
+
+    .sizing-panel {
+      margin-top: 18px;
+      padding: 20px;
+    }
+
+    .sizing-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 16px;
+    }
+
+    .sizing-select-wrap {
+      flex: 0 0 245px;
+    }
+
+    .sizing-options {
+      flex: 0 0 360px;
+    }
+
+    .sizing-options .sizing-select-wrap { width: 100%; }
+
+    .sizing-select-wrap label {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .sizing-select {
+      width: 100%;
+      min-height: 44px;
+      padding: 9px 34px 9px 11px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #09101d;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .sizing-toggle {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      margin-top: 11px;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .sizing-toggle input {
+      width: 18px;
+      height: 18px;
+      margin: 1px 0 0;
+      accent-color: var(--green);
+      cursor: pointer;
+    }
+
+    .sizing-toggle span { display: block; font-size: .8rem; }
+    .sizing-toggle small { display: block; margin-top: 2px; color: var(--muted); font-size: .7rem; font-weight: 400; }
+
+    .sizing-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 9px;
+      margin-bottom: 15px;
+    }
+
+    .sizing-summary > div {
+      padding: 12px 13px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: rgba(7, 11, 19, .38);
+    }
+
+    .sizing-summary span {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: .72rem;
+    }
+
+    .sizing-summary strong {
+      font-size: .92rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sizing-table-wrap {
+      max-height: 530px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      scrollbar-color: var(--line) transparent;
+      scrollbar-width: thin;
+    }
+
+    .sizing-table {
+      width: 100%;
+      min-width: 0;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: .76rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sizing-table th:nth-child(1), .sizing-table td:nth-child(1) { width: 10%; }
+    .sizing-table th:nth-child(2), .sizing-table td:nth-child(2) { width: 10%; }
+    .sizing-table th:nth-child(3), .sizing-table td:nth-child(3),
+    .sizing-table th:nth-child(4), .sizing-table td:nth-child(4) { width: 12%; }
+    .sizing-table th:nth-child(n+5), .sizing-table td:nth-child(n+5) { width: 14%; }
+
+    .sizing-table th,
+    .sizing-table td {
+      padding: 9px 6px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sizing-table th:first-child,
+    .sizing-table td:first-child,
+    .sizing-table th:nth-child(2),
+    .sizing-table td:nth-child(2) { text-align: left; }
+
+    .sizing-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #111b2c;
+      color: var(--muted);
+      font-size: .7rem;
+      line-height: 1.25;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      white-space: normal;
+    }
+
+    .sizing-table tbody tr:last-child td { border-bottom: 0; }
+    .sizing-table tbody tr:hover { background: rgba(112, 165, 255, .06); }
+
+    .sizing-table .mini-row {
+      background: var(--green-soft);
+    }
+
+    .sizing-table .mini-row:hover { background: rgba(56, 217, 169, .2); }
+
+    .mini-equivalent {
+      display: inline-flex;
+      align-items: center;
+      min-height: 25px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(56, 217, 169, .15);
+      color: var(--green);
+      font-size: .72rem;
+      font-weight: 750;
+    }
+
+    .sizing-note {
+      margin: 11px 0 0;
+      color: var(--muted);
+      font-size: .74rem;
+      line-height: 1.5;
+    }
+
+    .sizing-note a { color: var(--blue); }
+
+    @media (max-width: 900px) {
+      .app { width: calc(100% - 16px); }
+      .layout { grid-template-columns: 1fr; }
+      .main { grid-column: 1; }
+      .metrics { grid-template-columns: 1fr 1fr; }
+      .sizing-head { display: block; }
+      .sizing-options { margin-top: 14px; }
+      .actions {
+        left: 8px;
+        right: 8px;
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 620px) {
+      body { padding-right: 0; }
+      .app { width: calc(100% - 12px); padding-top: 20px; }
+      .topbar { display: block; }
+      .rule-chip { display: inline-block; margin-top: 15px; white-space: normal; }
+      .metrics { grid-template-columns: 1fr 1fr; }
+      .metric { min-height: 104px; padding: 14px; }
+      .timing-grid, .assumptions { grid-template-columns: 1fr; }
+      .sizing-summary { grid-template-columns: 1fr 1fr; }
+      .results-head, .life-heading { display: block; }
+      .status { text-align: left; margin-top: 8px; }
+      .life-outcome { display: inline-block; margin-top: 8px; }
+      .life-tools { align-items: flex-start; }
+      canvas { height: 240px; }
+      .life-scroll canvas { height: 290px; }
+
+      #sim-form,
+      .execution-card { grid-template-columns: 1fr; }
+
+      #sim-form > .field,
+      .execution-card > .field {
+        grid-column: 1 / -1;
+        grid-row: auto;
+      }
+
+      .strategy-trades {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .sizing-table-wrap { max-height: 620px; }
+      .sizing-table, .sizing-table tbody { display: block; width: 100%; }
+      .sizing-table thead { display: none; }
+      .sizing-table tbody tr {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+        padding: 9px;
+        border-bottom: 1px solid var(--line);
+      }
+      .sizing-table tbody tr:last-child { border-bottom: 0; }
+      .sizing-table td,
+      .sizing-table td:first-child,
+      .sizing-table td:nth-child(2) {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        gap: 9px;
+        padding: 5px 6px;
+        border: 0;
+        text-align: right;
+        white-space: normal;
+        overflow: visible;
+      }
+      .sizing-table td::before {
+        content: attr(data-label);
+        color: var(--muted);
+        font-size: .68rem;
+        font-weight: 500;
+        text-align: left;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+
+    @media (max-width: 420px) {
+      .sizing-table tbody tr { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Funded account survival lab</p>
+        <h1>LucidFlex 50K Monte Carlo</h1>
+        <p class="subtitle">Estimate how often a strategy reaches the $54,100 max-payout balance before touching the account’s active loss floor.</p>
+      </div>
+      <div class="rule-chip"><strong>$50,100</strong> locked MLL · <strong>$54,100</strong> target</div>
+    </header>
+
+    <div class="layout">
+      <aside class="panel controls" aria-labelledby="controls-title">
+        <h2 id="controls-title">Strategy assumptions</h2>
+        <p class="section-note">Every trade is sampled independently from the win rate below.</p>
+
+        <form id="sim-form" novalidate>
+          <div class="field strategy-risk">
+            <div class="field-head">
+              <label for="risk">Dollar risk per trade</label>
+              <span class="hint">fixed loss</span>
+            </div>
+            <div class="input-wrap">
+              <input id="risk" name="risk" type="number" min="1" max="2000" step="1" value="200" inputmode="decimal">
+              <span class="suffix">USD</span>
+            </div>
+          </div>
+
+          <div class="field strategy-rr">
+            <div class="field-head">
+              <label for="rr">Reward-to-risk ratio</label>
+              <span class="hint">R multiple</span>
+            </div>
+            <div class="input-wrap">
+              <input id="rr" name="rr" type="number" min="0.05" max="20" step="0.05" value="2" inputmode="decimal">
+              <span class="suffix">R</span>
+            </div>
+          </div>
+
+          <div class="field strategy-win">
+            <div class="field-head">
+              <label for="win-rate">Strategy win rate</label>
+              <span class="hint">per trade</span>
+            </div>
+            <div class="input-wrap">
+              <input id="win-rate" name="winRate" type="number" min="0.1" max="99.9" step="0.1" value="45" inputmode="decimal">
+              <span class="suffix">%</span>
+            </div>
+          </div>
+
+          <div class="field strategy-trades">
+            <div class="field-head">
+              <label for="trades-mode">Trades per day</label>
+              <span class="hint">fixed or daily range</span>
+            </div>
+            <select id="trades-mode">
+              <option value="fixed">Fixed count</option>
+              <option value="range">Random range</option>
+            </select>
+            <div class="field" id="trades-fixed-fields">
+              <div class="input-wrap">
+                <input id="trades-day" name="tradesPerDay" type="number" min="1" max="100" step="1" value="5" inputmode="numeric" aria-label="Fixed trades per day">
+                <span class="suffix">trades</span>
+              </div>
+            </div>
+            <div class="split-fields" id="trades-range-fields" hidden>
+              <div class="field">
+                <div class="input-wrap">
+                  <input id="trades-min" type="number" min="1" max="100" step="1" value="1" inputmode="numeric" aria-label="Minimum trades per day">
+                  <span class="suffix">min</span>
+                </div>
+              </div>
+              <div class="field">
+                <div class="input-wrap">
+                  <input id="trades-max" type="number" min="1" max="100" step="1" value="4" inputmode="numeric" aria-label="Maximum trades per day">
+                  <span class="suffix">max</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field strategy-simulations">
+            <div class="field-head">
+              <label for="simulations">Funded accounts</label>
+              <span class="hint">runs</span>
+            </div>
+            <div class="input-wrap">
+              <input id="simulations" name="simulations" type="number" min="100" max="100000" step="100" value="100000" inputmode="numeric">
+              <span class="suffix">runs</span>
+            </div>
+          </div>
+
+          <section class="execution-card" aria-labelledby="execution-title">
+            <h3 class="execution-title" id="execution-title">Execution realism</h3>
+            <p class="execution-note">Optional per-trade costs and fill variation.</p>
+
+            <div class="field">
+              <div class="field-head">
+                <label for="execution-product">Futures product</label>
+                <span class="hint">contract specs</span>
+              </div>
+              <select id="execution-product">
+                <option value="MNQ">MNQ · $2/pt · $0.50/tick</option>
+                <option value="MES">MES · $5/pt · $1.25/tick</option>
+                <option value="M2K">M2K · $5/pt · $0.50/tick</option>
+                <option value="MYM">MYM · $0.50/pt · $0.50/tick</option>
+                <option value="NQ">NQ · $20/pt · $5/tick</option>
+                <option value="ES">ES · $50/pt · $12.50/tick</option>
+                <option value="RTY">RTY · $50/pt · $5/tick</option>
+                <option value="YM">YM · $5/pt · $5/tick</option>
+                <option value="CUSTOM">Custom</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <div class="field-head"><label for="execution-contracts">Contracts per trade</label></div>
+              <div class="input-wrap">
+                <input id="execution-contracts" type="number" min="1" max="40" step="1" value="1" inputmode="numeric">
+                <span class="suffix">contracts</span>
+              </div>
+            </div>
+
+            <div class="subfields" id="custom-spec-fields" hidden>
+              <div class="split-fields">
+                <div class="field">
+                  <div class="field-head"><label for="custom-point-value">$/point</label></div>
+                  <input id="custom-point-value" type="number" min="0.01" max="10000" step="0.01" value="2" inputmode="decimal">
+                </div>
+                <div class="field">
+                  <div class="field-head"><label for="custom-tick-size">Tick size</label></div>
+                  <input id="custom-tick-size" type="number" min="0.0001" max="1000" step="0.0001" value="0.25" inputmode="decimal">
+                </div>
+              </div>
+            </div>
+
+            <label class="toggle-row" for="commission-enabled">
+              <input id="commission-enabled" type="checkbox">
+              <span>Include trading commissions</span>
+            </label>
+            <div class="subfields" id="commission-fields" hidden>
+              <div class="field">
+                <div class="field-head"><label for="commission-source">Commission rate</label></div>
+                <select id="commission-source">
+                  <option value="preset">Lucid Preset</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+              <div class="field" id="custom-commission-field" hidden>
+                <div class="field-head"><label for="custom-commission">Custom rate</label><span class="hint">per side, per contract</span></div>
+                <div class="input-wrap">
+                  <input id="custom-commission" type="number" min="0" max="100" step="0.01" value="0.50" inputmode="decimal">
+                  <span class="suffix">USD</span>
+                </div>
+              </div>
+              <p class="micro-note" id="commission-summary">MNQ preset: $0.50 per side, per contract.</p>
+              <p class="micro-note">Preset rates use Lucid’s <a href="https://support.lucidtrading.com/en/articles/11508978-approved-products-and-commissions" target="_blank" rel="noreferrer">published commission schedule</a>.</p>
+            </div>
+
+            <label class="toggle-row" for="slippage-enabled">
+              <input id="slippage-enabled" type="checkbox">
+              <span>Include trading slippage</span>
+            </label>
+            <div class="subfields" id="slippage-fields" hidden>
+              <div class="field">
+                <div class="field-head"><label for="slippage-type">Deviation measured in</label></div>
+                <select id="slippage-type">
+                  <option value="dollars">Dollars</option>
+                  <option value="points">Points</option>
+                  <option value="ticks">Ticks</option>
+                </select>
+              </div>
+              <div class="field">
+                <div class="field-head"><label for="slippage-amount">Maximum ± deviation</label><span class="hint">sampled each trade</span></div>
+                <div class="input-wrap">
+                  <input id="slippage-amount" type="number" min="0" max="10000" step="0.01" value="1" inputmode="decimal">
+                  <span class="suffix" id="slippage-unit">USD</span>
+                </div>
+              </div>
+              <p class="micro-note" id="slippage-summary">Each fill varies uniformly by up to ±$1.00. A symmetric range adds variance but has a $0 average effect.</p>
+            </div>
+          </section>
+
+          <div class="derived" aria-live="polite">
+            <div><span>Estimated winning trade</span><strong id="win-amount">$400</strong></div>
+            <div><span>Estimated expectancy</span><strong id="expectancy">+$70</strong></div>
+          </div>
+
+          <div class="actions">
+            <button class="run" id="run-button" type="submit">Run Simulation</button>
+            <button class="reset" id="reset-button" type="button">Reset</button>
+          </div>
+          <p class="error" id="form-error" role="alert"></p>
+        </form>
+      </aside>
+
+      <section class="main" aria-label="Simulation results">
+        <div class="metrics" aria-live="polite">
+          <article class="metric pass">
+            <span class="label"><span class="dot"></span>Pass rate</span>
+            <strong class="value" id="pass-rate">—</strong>
+            <small id="pass-count">Accounts reaching $54,100</small>
+          </article>
+          <article class="metric fail">
+            <span class="label"><span class="dot"></span>Fail rate</span>
+            <strong class="value" id="fail-rate">—</strong>
+            <small id="fail-count">Accounts touching MLL</small>
+          </article>
+          <article class="metric">
+            <span class="label"><span class="dot"></span>Average days</span>
+            <strong class="value" id="avg-days">—</strong>
+            <small>Successful accounts only</small>
+          </article>
+          <article class="metric">
+            <span class="label"><span class="dot"></span>Median days</span>
+            <strong class="value" id="median-days">—</strong>
+            <small>50th percentile of passes</small>
+          </article>
+        </div>
+
+        <div class="panel results-panel">
+          <div class="results-head">
+            <div>
+              <h2>Time to outcome</h2>
+              <p class="section-note" style="margin-bottom:0">Pass timing statistics plus the daily distribution of passes and MLL breaches.</p>
+            </div>
+            <div class="status" id="status" aria-live="polite">Ready to simulate</div>
+          </div>
+
+          <div class="outcome-bar" role="img" id="outcome-bar" aria-label="No simulation results yet">
+            <span class="outcome-pass" id="bar-pass"></span>
+            <span class="outcome-fail" id="bar-fail"></span>
+            <span class="outcome-timeout" id="bar-timeout"></span>
+          </div>
+
+          <div class="timing-grid">
+            <div class="timing"><span>Shortest successful run</span><strong id="shortest-days">—</strong></div>
+            <div class="timing"><span>Longest successful run</span><strong id="longest-days">—</strong></div>
+            <div class="timing"><span>90% of passes by</span><strong id="p90-days">—</strong></div>
+          </div>
+
+          <div class="chart-wrap">
+            <h3 class="chart-title">Account outcomes by trading day</h3>
+            <p class="chart-caption">Each trading-day group shows accounts that reached $54,100 in green and accounts that breached the active MLL in red.</p>
+            <div class="chart-legend outcome-legend" aria-label="Outcome chart legend">
+              <span class="legend-item pass"><span class="dot"></span>Passed</span>
+              <span class="legend-item fail"><span class="dot"></span>Breached</span>
+            </div>
+            <canvas id="chart" role="img" aria-label="Grouped bar chart of passed and breached accounts by trading day"></canvas>
+            <div class="chart-empty" id="chart-empty">Run the simulation to view the distribution.</div>
+            <div class="hist-tooltip" id="hist-tooltip" role="tooltip" hidden></div>
+          </div>
+
+          <div class="chart-wrap life-wrap">
+            <div class="life-heading">
+              <div>
+                <h3 class="chart-title">Life of one funded account</h3>
+                <p class="chart-caption" style="margin-bottom:0">A fresh sample from this batch, with the loss floor adjusted after each EOD close.</p>
+              </div>
+              <span class="life-outcome" id="life-outcome">Awaiting run</span>
+            </div>
+            <div class="chart-legend" aria-label="Account life chart legend">
+              <span class="legend-item"><span class="legend-line"></span>Account balance</span>
+              <span class="legend-item"><span class="legend-line mll"></span>Active MLL</span>
+              <span class="legend-item"><span class="legend-line target"></span>$54,100 target</span>
+            </div>
+            <div class="life-tools">
+              <span class="chart-caption" style="margin:0">Vertical lines separate trading days.</span>
+              <div class="zoom-control">
+                <label for="life-zoom">Zoom</label>
+                <input id="life-zoom" type="range" min="1" max="8" step="1" value="1">
+                <output class="zoom-value" id="life-zoom-value" for="life-zoom">1×</output>
+              </div>
+            </div>
+            <div class="life-chart-shell" id="life-chart-shell">
+              <div class="life-scroll" id="life-scroll">
+                <canvas id="life-chart" role="img" aria-label="Sample funded-account balance and end-of-day maximum loss limit by trade and trading day"></canvas>
+              </div>
+              <div class="life-tooltip" id="life-tooltip" role="tooltip" hidden></div>
+            </div>
+            <p class="life-help" id="life-help">Hover a blue trade point or red EOD point for details. Increase zoom, then scroll horizontally to inspect longer runs.</p>
+          </div>
+
+          <p class="timeout-note" id="timeout-note"></p>
+        </div>
+
+        <section class="panel sizing-panel" aria-labelledby="sizing-title">
+          <div class="sizing-head">
+            <div>
+              <h2 id="sizing-title">Micro contract sizing</h2>
+              <p class="section-note" style="margin-bottom:0">Point and tick distances for 1–40 micros using the current risk and R:R trade target.</p>
+            </div>
+            <div class="sizing-options">
+              <div class="sizing-select-wrap">
+                <label for="sizing-instrument">Futures product</label>
+                <select class="sizing-select" id="sizing-instrument">
+                  <option value="MNQ">MNQ / NQ · 0.25-point increments</option>
+                  <option value="MES">MES / ES · 0.25-point increments</option>
+                  <option value="M2K">M2K / RTY · 0.10-point increments</option>
+                  <option value="MYM">MYM / YM · 1-point increments</option>
+                </select>
+              </div>
+              <label class="sizing-toggle" for="tradeable-only">
+                <input id="tradeable-only" type="checkbox" checked>
+                <span>Tradeable increments only<small id="sizing-count">Hide rows requiring fractional ticks</small></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="sizing-summary" aria-live="polite">
+            <div><span>Current dollar risk</span><strong id="sizing-risk">$200</strong></div>
+            <div><span>Trade profit target</span><strong id="sizing-target">$400 at 2R</strong></div>
+            <div><span>Micro contract specification</span><strong id="micro-spec">$2/point · $0.50/tick</strong></div>
+            <div><span>Mini contract specification</span><strong id="mini-spec">$20/point · $5/tick</strong></div>
+          </div>
+
+          <div class="sizing-table-wrap">
+            <table class="sizing-table">
+              <thead>
+                <tr>
+                  <th scope="col">Micros</th>
+                  <th scope="col">Minis</th>
+                  <th scope="col">$/point</th>
+                  <th scope="col">$/tick</th>
+                  <th scope="col">Risk points</th>
+                  <th scope="col">Target points</th>
+                  <th scope="col">Risk ticks</th>
+                  <th scope="col">Target ticks</th>
+                </tr>
+              </thead>
+              <tbody id="sizing-body"></tbody>
+            </table>
+          </div>
+          <p class="sizing-note">Rows 10, 20, 30, and 40 show Lucid’s mini-equivalent sizing. The filter keeps only sizes where both risk and target equal a whole number of exchange ticks. Contract values are based on <a href="https://www.cmegroup.com/articles/faqs/frequently-asked-questions-micro-e-mini-equity-index-futures.html" target="_blank" rel="noreferrer">CME Micro E-mini specifications</a>.</p>
+        </section>
+
+        <div class="assumptions" aria-label="Model assumptions">
+          <div class="assumption"><strong>Drawdown:</strong> starts at $48,000, trails by end-of-day, and locks at $50,100.</div>
+          <div class="assumption"><strong>Outcomes:</strong> fixed gross loss or R-multiple win, adjusted by any enabled round-trip commission and ± fill deviation.</div>
+          <div class="assumption"><strong>Stopping rule:</strong> pass at $54,100; fail immediately when balance reaches the active MLL.</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const START_BALANCE = 50000;
+      const START_MLL = 48000;
+      const LOCKED_MLL = 50100;
+      const TARGET = 54100;
+      const MAX_DAYS = 10000;
+      const CONTRACTS = Object.freeze({
+        MNQ: { micro: 'MNQ', mini: 'NQ', name: 'Nasdaq-100', pointValue: 2, tickSize: .25, tickValue: .5 },
+        MES: { micro: 'MES', mini: 'ES', name: 'S&P 500', pointValue: 5, tickSize: .25, tickValue: 1.25 },
+        M2K: { micro: 'M2K', mini: 'RTY', name: 'Russell 2000', pointValue: 5, tickSize: .1, tickValue: .5 },
+        MYM: { micro: 'MYM', mini: 'YM', name: 'Dow', pointValue: .5, tickSize: 1, tickValue: .5 }
+      });
+      const EXECUTION_PRODUCTS = Object.freeze({
+        MNQ: { name: 'MNQ', pointValue: 2, tickSize: .25, tickValue: .5, commissionPerSide: .5, maxContracts: 40 },
+        MES: { name: 'MES', pointValue: 5, tickSize: .25, tickValue: 1.25, commissionPerSide: .5, maxContracts: 40 },
+        M2K: { name: 'M2K', pointValue: 5, tickSize: .1, tickValue: .5, commissionPerSide: .5, maxContracts: 40 },
+        MYM: { name: 'MYM', pointValue: .5, tickSize: 1, tickValue: .5, commissionPerSide: .5, maxContracts: 40 },
+        NQ: { name: 'NQ', pointValue: 20, tickSize: .25, tickValue: 5, commissionPerSide: 1.75, maxContracts: 4 },
+        ES: { name: 'ES', pointValue: 50, tickSize: .25, tickValue: 12.5, commissionPerSide: 1.75, maxContracts: 4 },
+        RTY: { name: 'RTY', pointValue: 50, tickSize: .1, tickValue: 5, commissionPerSide: 1.75, maxContracts: 4 },
+        YM: { name: 'YM', pointValue: 5, tickSize: 1, tickValue: 5, commissionPerSide: 1.75, maxContracts: 4 }
+      });
+
+      const defaults = {
+        risk: 200,
+        rr: 2,
+        winRate: 45,
+        tradesPerDay: 5,
+        tradesMin: 1,
+        tradesMax: 4,
+        contracts: 1,
+        customPointValue: 2,
+        customTickSize: .25,
+        customCommission: .5,
+        slippageAmount: 1,
+        simulations: 100000
+      };
+
+      const form = document.getElementById('sim-form');
+      const runButton = document.getElementById('run-button');
+      const resetButton = document.getElementById('reset-button');
+      const errorBox = document.getElementById('form-error');
+      const chart = document.getElementById('chart');
+      const chartEmpty = document.getElementById('chart-empty');
+      const histogramWrap = chart.closest('.chart-wrap');
+      const histogramTooltip = document.getElementById('hist-tooltip');
+      const ctx = chart.getContext('2d');
+      const lifeChart = document.getElementById('life-chart');
+      const lifeCtx = lifeChart.getContext('2d');
+      const lifeScroll = document.getElementById('life-scroll');
+      const lifeShell = document.getElementById('life-chart-shell');
+      const lifeTooltip = document.getElementById('life-tooltip');
+      const lifeZoom = document.getElementById('life-zoom');
+      const lifeZoomValue = document.getElementById('life-zoom-value');
+      const sizingInstrument = document.getElementById('sizing-instrument');
+      const sizingBody = document.getElementById('sizing-body');
+      const sizingTradeableOnly = document.getElementById('tradeable-only');
+      const tradesMode = document.getElementById('trades-mode');
+      const tradesFixedFields = document.getElementById('trades-fixed-fields');
+      const tradesRangeFields = document.getElementById('trades-range-fields');
+      const executionProduct = document.getElementById('execution-product');
+      const commissionEnabled = document.getElementById('commission-enabled');
+      const commissionSource = document.getElementById('commission-source');
+      const commissionFields = document.getElementById('commission-fields');
+      const customCommissionField = document.getElementById('custom-commission-field');
+      const slippageEnabled = document.getElementById('slippage-enabled');
+      const slippageType = document.getElementById('slippage-type');
+      const slippageFields = document.getElementById('slippage-fields');
+      const customSpecFields = document.getElementById('custom-spec-fields');
+      let lastHistogram = null;
+      let lastLife = null;
+      let histogramHitTargets = [];
+      let lifeHitTargets = [];
+      let activeWorker = null;
+
+      const fields = {
+        risk: document.getElementById('risk'),
+        rr: document.getElementById('rr'),
+        winRate: document.getElementById('win-rate'),
+        tradesPerDay: document.getElementById('trades-day'),
+        tradesMin: document.getElementById('trades-min'),
+        tradesMax: document.getElementById('trades-max'),
+        contracts: document.getElementById('execution-contracts'),
+        customPointValue: document.getElementById('custom-point-value'),
+        customTickSize: document.getElementById('custom-tick-size'),
+        customCommission: document.getElementById('custom-commission'),
+        slippageAmount: document.getElementById('slippage-amount'),
+        simulations: document.getElementById('simulations')
+      };
+
+      const money = new Intl.NumberFormat('en-US', {
+        style: 'currency', currency: 'USD', maximumFractionDigits: 2
+      });
+      const wholeMoney = new Intl.NumberFormat('en-US', {
+        style: 'currency', currency: 'USD', maximumFractionDigits: 0
+      });
+      const integer = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+      const distance = new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+      function getExecutionSpec() {
+        const selected = executionProduct.value;
+        if (selected === 'CUSTOM') {
+          const pointValue = Number(fields.customPointValue.value);
+          const tickSize = Number(fields.customTickSize.value);
+          return {
+            name: 'Custom',
+            pointValue,
+            tickSize,
+            tickValue: pointValue * tickSize,
+            commissionPerSide: Number(fields.customCommission.value),
+            maxContracts: 40
+          };
+        }
+        return EXECUTION_PRODUCTS[selected];
+      }
+
+      function readConfig() {
+        const spec = getExecutionSpec();
+        const isRange = tradesMode.value === 'range';
+        const contracts = Number(fields.contracts.value);
+        const commissionPerSide = commissionSource.value === 'custom'
+          ? Number(fields.customCommission.value)
+          : spec.commissionPerSide;
+        const slipAmount = Number(fields.slippageAmount.value);
+        let slippageMaxDollars = slipAmount;
+        if (slippageType.value === 'points') slippageMaxDollars = slipAmount * spec.pointValue * contracts;
+        if (slippageType.value === 'ticks') slippageMaxDollars = slipAmount * spec.tickValue * contracts;
+
+        return {
+          risk: Number(fields.risk.value),
+          rr: Number(fields.rr.value),
+          winRate: Number(fields.winRate.value),
+          tradesMin: isRange ? Number(fields.tradesMin.value) : Number(fields.tradesPerDay.value),
+          tradesMax: isRange ? Number(fields.tradesMax.value) : Number(fields.tradesPerDay.value),
+          simulations: Number(fields.simulations.value),
+          product: spec.name,
+          pointValue: spec.pointValue,
+          tickSize: spec.tickSize,
+          tickValue: spec.tickValue,
+          maxContracts: spec.maxContracts,
+          contracts,
+          commissionEnabled: commissionEnabled.checked,
+          commissionPerSide,
+          commissionRoundTrip: commissionEnabled.checked ? commissionPerSide * 2 * contracts : 0,
+          slippageEnabled: slippageEnabled.checked,
+          slippageAmount: slipAmount,
+          slippageType: slippageType.value,
+          slippageMaxDollars: slippageEnabled.checked ? slippageMaxDollars : 0,
+          startBalance: START_BALANCE,
+          startMLL: START_MLL,
+          lockedMLL: LOCKED_MLL,
+          target: TARGET,
+          maxDays: MAX_DAYS
+        };
+      }
+
+      function validate(c) {
+        if (!Number.isFinite(c.risk) || c.risk < 1 || c.risk > 2000) return 'Risk must be between $1 and $2,000.';
+        if (!Number.isFinite(c.rr) || c.rr < .05 || c.rr > 20) return 'R:R must be between 0.05 and 20.';
+        if (!Number.isFinite(c.winRate) || c.winRate <= 0 || c.winRate >= 100) return 'Win rate must be greater than 0% and less than 100%.';
+        if (!Number.isInteger(c.tradesMin) || c.tradesMin < 1 || c.tradesMin > 100) return 'Minimum trades per day must be a whole number from 1 to 100.';
+        if (!Number.isInteger(c.tradesMax) || c.tradesMax < 1 || c.tradesMax > 100) return 'Maximum trades per day must be a whole number from 1 to 100.';
+        if (c.tradesMin > c.tradesMax) return 'Minimum trades per day cannot be greater than the maximum.';
+        if (!Number.isInteger(c.simulations) || c.simulations < 100 || c.simulations > 100000) return 'Funded accounts must be a whole number from 100 to 100,000.';
+        if (!Number.isFinite(c.pointValue) || c.pointValue <= 0 || c.pointValue > 10000) return 'Custom $/point must be greater than $0 and no more than $10,000.';
+        if (!Number.isFinite(c.tickSize) || c.tickSize <= 0 || c.tickSize > 1000) return 'Custom tick size must be greater than 0 and no more than 1,000 points.';
+        if (!Number.isInteger(c.contracts) || c.contracts < 1 || c.contracts > c.maxContracts) return `${c.product} contracts must be a whole number from 1 to ${c.maxContracts}.`;
+        if (c.commissionEnabled && (!Number.isFinite(c.commissionPerSide) || c.commissionPerSide < 0 || c.commissionPerSide > 100)) return 'Commission must be between $0 and $100 per side, per contract.';
+        if (c.slippageEnabled && (!Number.isFinite(c.slippageAmount) || c.slippageAmount < 0 || c.slippageAmount > 10000)) return 'Slippage deviation must be between 0 and 10,000.';
+        return '';
+      }
+
+      function updateDerived() {
+        const c = readConfig();
+        const grossWin = c.risk * c.rr;
+        const averageWin = grossWin - c.commissionRoundTrip;
+        const p = c.winRate / 100;
+        const grossExpectancy = (p * grossWin) - ((1 - p) * c.risk);
+        const expectancy = grossExpectancy - c.commissionRoundTrip;
+        const winNode = document.getElementById('win-amount');
+        if (!Number.isFinite(averageWin) || !Number.isFinite(c.slippageMaxDollars)) {
+          winNode.textContent = '—';
+        } else if (c.slippageEnabled && c.slippageMaxDollars > 0) {
+          winNode.textContent = `${money.format(averageWin - c.slippageMaxDollars)}–${money.format(averageWin + c.slippageMaxDollars)}`;
+        } else {
+          winNode.textContent = money.format(averageWin);
+        }
+        const expNode = document.getElementById('expectancy');
+        expNode.textContent = Number.isFinite(expectancy) ? `${expectancy >= 0 ? '+' : ''}${money.format(expectancy)} avg` : '—';
+        expNode.style.color = expectancy >= 0 ? 'var(--green)' : 'var(--red)';
+        updateSizing();
+      }
+
+      function updateExecutionControls() {
+        const isRange = tradesMode.value === 'range';
+        tradesFixedFields.hidden = isRange;
+        tradesRangeFields.hidden = !isRange;
+
+        commissionFields.hidden = !commissionEnabled.checked;
+        slippageFields.hidden = !slippageEnabled.checked;
+        const isCustomProduct = executionProduct.value === 'CUSTOM';
+        customSpecFields.hidden = !isCustomProduct;
+        commissionSource.options[0].disabled = isCustomProduct;
+        if (isCustomProduct && commissionSource.value === 'preset') commissionSource.value = 'custom';
+        customCommissionField.hidden = commissionSource.value !== 'custom';
+
+        const spec = getExecutionSpec();
+        fields.contracts.max = String(spec.maxContracts);
+        const contracts = Number(fields.contracts.value);
+        if (Number.isFinite(contracts) && contracts > spec.maxContracts) fields.contracts.value = spec.maxContracts;
+
+        const rate = commissionSource.value === 'custom' ? Number(fields.customCommission.value) : spec.commissionPerSide;
+        document.getElementById('commission-summary').textContent = commissionSource.value === 'custom'
+          ? `Custom rate: ${Number.isFinite(rate) ? money.format(rate) : '—'} per side, per contract.`
+          : `${spec.name} Lucid preset: ${money.format(rate)} per side, per contract.`;
+
+        const unit = slippageType.value;
+        document.getElementById('slippage-unit').textContent = unit === 'dollars' ? 'USD' : unit;
+        const c = readConfig();
+        document.getElementById('slippage-summary').textContent = Number.isFinite(c.slippageMaxDollars)
+          ? `Each fill varies uniformly by up to ±${money.format(c.slippageMaxDollars)} per trade. A symmetric range adds variance but has a $0 average effect.`
+          : 'Enter a valid deviation to calculate its dollar range.';
+        updateDerived();
+      }
+
+      function updateSizing() {
+        const contract = CONTRACTS[sizingInstrument.value];
+        const risk = Number(fields.risk.value);
+        const rr = Number(fields.rr.value);
+        if (!contract || !Number.isFinite(risk) || !Number.isFinite(rr)) return;
+
+        const target = risk * rr;
+        document.getElementById('sizing-risk').textContent = money.format(risk);
+        document.getElementById('sizing-target').textContent = `${money.format(target)} at ${distance.format(rr)}R`;
+        document.getElementById('micro-spec').textContent =
+          `${money.format(contract.pointValue)}/point · ${money.format(contract.tickValue)}/tick`;
+        document.getElementById('mini-spec').textContent =
+          `${money.format(contract.pointValue * 10)}/point · ${money.format(contract.tickValue * 10)}/tick`;
+
+        const rows = [];
+        let visibleCount = 0;
+        for (let micros = 1; micros <= 40; micros++) {
+          const positionPointValue = contract.pointValue * micros;
+          const positionTickValue = contract.tickValue * micros;
+          const riskTicks = risk / positionTickValue;
+          const targetTicks = target / positionTickValue;
+          const isWholeTick = value => Math.abs(value - Math.round(value)) < 1e-9;
+          const isTradeable = isWholeTick(riskTicks) && isWholeTick(targetTicks);
+          if (sizingTradeableOnly.checked && !isTradeable) continue;
+
+          visibleCount++;
+          const miniCount = micros % 10 === 0 ? micros / 10 : 0;
+          const miniLabel = miniCount
+            ? `<span class="mini-equivalent">${miniCount} ${contract.mini}</span>`
+            : '—';
+
+          rows.push(`
+            <tr${miniCount ? ' class="mini-row"' : ''}>
+              <td data-label="Micros"><strong>${micros} ${contract.micro}</strong></td>
+              <td data-label="Minis">${miniLabel}</td>
+              <td data-label="$/point">${money.format(positionPointValue)}</td>
+              <td data-label="$/tick">${money.format(positionTickValue)}</td>
+              <td data-label="Risk points">${distance.format(risk / positionPointValue)}</td>
+              <td data-label="Target points">${distance.format(target / positionPointValue)}</td>
+              <td data-label="Risk ticks">${distance.format(riskTicks)}</td>
+              <td data-label="Target ticks">${distance.format(targetTicks)}</td>
+            </tr>`);
+        }
+        sizingBody.innerHTML = rows.length
+          ? rows.join('')
+          : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No contract sizes align both risk and target to whole ticks.</td></tr>';
+        document.getElementById('sizing-count').textContent = sizingTradeableOnly.checked
+          ? `Showing ${visibleCount} of 40 sizes`
+          : 'Showing all 40 sizes';
+      }
+
+      function freshSeed() {
+        if (globalThis.crypto && typeof globalThis.crypto.getRandomValues === 'function') {
+          const value = new Uint32Array(1);
+          globalThis.crypto.getRandomValues(value);
+          return value[0] || 1;
+        }
+        return Math.floor(Math.random() * 4294967295) + 1;
+      }
+
+      function workerSource() {
+        function mulberry32(seed) {
+          let a = seed >>> 0;
+          return function() {
+            a |= 0;
+            a = a + 0x6D2B79F5 | 0;
+            let t = Math.imul(a ^ a >>> 15, 1 | a);
+            t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+          };
+        }
+
+        self.onmessage = (event) => {
+          const c = event.data;
+          const random = mulberry32(c.seed);
+          const winAmount = c.risk * c.rr;
+          const winProbability = c.winRate / 100;
+          const successDays = [];
+          const failureDays = [];
+          let passes = 0;
+          let fails = 0;
+          let timeouts = 0;
+          let samplePath = [];
+          let sampleEod = [];
+          let sampleOutcome = null;
+          let sampleTruncated = false;
+          const maxSamplePoints = 50000;
+
+          for (let run = 0; run < c.simulations; run++) {
+            let balance = c.startBalance;
+            let mll = c.startMLL;
+            let resolved = false;
+            const capture = run === 0;
+            if (capture) samplePath.push({ x: 0, day: 0, trade: 0, balance, mll, pnl: 0, result: 'Start', event: 'start' });
+
+            for (let day = 1; day <= c.maxDays && !resolved; day++) {
+              const dayTrades = c.tradesMin + Math.floor(random() * (c.tradesMax - c.tradesMin + 1));
+              for (let trade = 0; trade < dayTrades; trade++) {
+                const won = random() < winProbability;
+                const grossPnl = won ? winAmount : -c.risk;
+                const slippage = c.slippageEnabled ? (random() * 2 - 1) * c.slippageMaxDollars : 0;
+                const commission = c.commissionEnabled ? c.commissionRoundTrip : 0;
+                const pnl = grossPnl + slippage - commission;
+                balance += pnl;
+                let sampleTrade = null;
+                let sampleTradeStored = false;
+
+                if (capture) {
+                  sampleTrade = {
+                    x: day - 1 + (trade + 1) / dayTrades,
+                    day,
+                    trade: trade + 1,
+                    tradesPerDay: dayTrades,
+                    balance,
+                    mll,
+                    grossPnl,
+                    slippage,
+                    commission,
+                    pnl,
+                    result: won ? 'Win' : 'Loss',
+                    event: 'trade'
+                  };
+                  if (samplePath.length < maxSamplePoints) {
+                    samplePath.push(sampleTrade);
+                    sampleTradeStored = true;
+                  } else {
+                    sampleTruncated = true;
+                  }
+                }
+
+                if (balance >= c.target) {
+                  passes++;
+                  successDays.push(day);
+                  if (capture) {
+                    sampleTrade.event = 'target';
+                    if (!sampleTradeStored) samplePath.push(sampleTrade);
+                    sampleOutcome = { type: 'pass', day, balance };
+                  }
+                  resolved = true;
+                  break;
+                }
+
+                if (balance <= mll) {
+                  fails++;
+                  failureDays.push(day);
+                  if (capture) {
+                    sampleTrade.event = 'breach';
+                    if (!sampleTradeStored) samplePath.push(sampleTrade);
+                    sampleOutcome = { type: 'breach', day, balance };
+                  }
+                  resolved = true;
+                  break;
+                }
+              }
+
+              if (!resolved) {
+                const previousMll = mll;
+                const trailedFloor = Math.min(balance - 2000, c.lockedMLL);
+                mll = Math.max(mll, trailedFloor);
+                if (capture) {
+                  sampleEod.push({
+                    x: day,
+                    day,
+                    closeBalance: balance,
+                    previousMll,
+                    newMll: mll,
+                    change: mll - previousMll,
+                    locked: mll >= c.lockedMLL
+                  });
+                }
+              }
+            }
+
+            if (!resolved) {
+              timeouts++;
+              if (capture) sampleOutcome = { type: 'unresolved', day: c.maxDays, balance };
+            }
+
+            if ((run + 1) % 2500 === 0) {
+              self.postMessage({ type: 'progress', completed: run + 1, total: c.simulations });
+            }
+          }
+
+          successDays.sort((a, b) => a - b);
+          failureDays.sort((a, b) => a - b);
+          self.postMessage({ type: 'done', passes, fails, timeouts, successDays, failureDays, samplePath, sampleEod, sampleOutcome, sampleTruncated });
+        };
+      }
+
+      function percentile(sorted, p) {
+        if (!sorted.length) return null;
+        const index = (sorted.length - 1) * p;
+        const lo = Math.floor(index);
+        const hi = Math.ceil(index);
+        if (lo === hi) return sorted[lo];
+        return sorted[lo] + (sorted[hi] - sorted[lo]) * (index - lo);
+      }
+
+      function makeHistogram(successValues, failureValues) {
+        if (!successValues.length && !failureValues.length) return null;
+        let min = Infinity;
+        let max = -Infinity;
+        for (const day of successValues) { min = Math.min(min, day); max = Math.max(max, day); }
+        for (const day of failureValues) { min = Math.min(min, day); max = Math.max(max, day); }
+        const span = Math.max(1, max - min + 1);
+        const binCount = Math.min(24, span);
+        const binWidth = Math.max(1, Math.ceil(span / binCount));
+        const bins = [];
+        for (let start = min; start <= max; start += binWidth) {
+          bins.push({ start, end: Math.min(max, start + binWidth - 1), passCount: 0, breachCount: 0 });
+        }
+        for (const day of successValues) {
+          const index = Math.min(bins.length - 1, Math.floor((day - min) / binWidth));
+          bins[index].passCount++;
+        }
+        for (const day of failureValues) {
+          const index = Math.min(bins.length - 1, Math.floor((day - min) / binWidth));
+          bins[index].breachCount++;
+        }
+        return bins;
+      }
+
+      function css(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      }
+
+      function drawChart(bins) {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = chart.getBoundingClientRect();
+        const width = Math.max(300, Math.floor(rect.width));
+        const height = Math.max(220, Math.floor(rect.height));
+        chart.width = width * dpr;
+        chart.height = height * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+        histogramHitTargets = [];
+        hideHistogramTooltip();
+
+        if (!bins || !bins.length) return;
+
+        const pad = { top: 12, right: 10, bottom: 43, left: 82 };
+        const plotW = width - pad.left - pad.right;
+        const plotH = height - pad.top - pad.bottom;
+        const maxCount = Math.max(
+          ...bins.map(b => Math.max(b.passCount, b.breachCount)),
+          1
+        );
+        const gridColor = css('--line');
+        const textColor = css('--muted');
+        const passColor = css('--green');
+        const breachColor = css('--red');
+        const slot = plotW / bins.length;
+        const groupWidth = Math.min(slot * .8, 92);
+        const groupGap = Math.max(2, Math.min(8, groupWidth * .08));
+        const barW = Math.max(2, (groupWidth - groupGap) / 2);
+
+        ctx.font = '12px Inter, system-ui, sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.strokeStyle = gridColor;
+        ctx.fillStyle = textColor;
+        ctx.lineWidth = 1;
+
+        for (let i = 0; i <= 4; i++) {
+          const y = pad.top + (plotH * i / 4);
+          const value = Math.round(maxCount * (1 - i / 4));
+          ctx.beginPath();
+          ctx.moveTo(pad.left, y + .5);
+          ctx.lineTo(width - pad.right, y + .5);
+          ctx.stroke();
+          ctx.textAlign = 'right';
+          ctx.fillText(integer.format(value), pad.left - 9, y);
+        }
+
+        const totalPasses = bins.reduce((sum, bin) => sum + bin.passCount, 0);
+        const totalBreaches = bins.reduce((sum, bin) => sum + bin.breachCount, 0);
+        let cumulativePasses = 0;
+        let cumulativeBreaches = 0;
+
+        bins.forEach((bin, i) => {
+          const slotX = pad.left + i * slot;
+          const groupLeft = slotX + (slot - (barW * 2 + groupGap)) / 2;
+          const passX = groupLeft;
+          const breachX = groupLeft + barW + groupGap;
+
+          const passH = (bin.passCount / maxCount) * plotH;
+          const breachH = (bin.breachCount / maxCount) * plotH;
+          const passY = pad.top + plotH - passH;
+          const breachY = pad.top + plotH - breachH;
+
+          ctx.fillStyle = passColor;
+          ctx.fillRect(passX, passY, barW, passH);
+
+          ctx.fillStyle = breachColor;
+          ctx.fillRect(breachX, breachY, barW, breachH);
+
+          cumulativePasses += bin.passCount;
+          cumulativeBreaches += bin.breachCount;
+
+          histogramHitTargets.push({
+            barLeft: passX,
+            barRight: breachX + barW,
+            barTop: Math.min(passY, breachY),
+            barBottom: pad.top + plotH,
+            labelLeft: slotX,
+            labelRight: slotX + slot,
+            labelTop: pad.top + plotH,
+            labelBottom: pad.top + plotH + 32,
+            bin,
+            totalPasses,
+            totalBreaches,
+            cumulativePasses,
+            cumulativeBreaches
+          });
+        });
+
+        const tickIndexes = bins.map((_, index) => index);
+        ctx.font = `${bins.length > 18 ? 10 : 11}px Inter, system-ui, sans-serif`;
+        ctx.fillStyle = textColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (const i of tickIndexes) {
+          const b = bins[i];
+          const x = pad.left + i * slot + slot / 2;
+          const label = b.start === b.end ? `${b.start}` : `${b.start}–${b.end}`;
+          ctx.fillText(label, x, pad.top + plotH + 10);
+        }
+
+        ctx.font = '12px Inter, system-ui, sans-serif';
+        ctx.save();
+        ctx.translate(15, pad.top + plotH / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('Accounts', 0, 0);
+        ctx.restore();
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Trading day', pad.left + plotW / 2, height);
+      }
+
+      function hideHistogramTooltip() {
+        histogramTooltip.hidden = true;
+        chart.style.cursor = 'default';
+      }
+
+      function showHistogramTooltip(hit, event) {
+        const b = hit.bin;
+        const dayLabel = b.start === b.end ? `Day ${b.start}` : `Days ${b.start}–${b.end}`;
+        const passShare = hit.totalPasses ? b.passCount / hit.totalPasses * 100 : 0;
+        const passCumulativeShare = hit.totalPasses ? hit.cumulativePasses / hit.totalPasses * 100 : 0;
+        const breachShare = hit.totalBreaches ? b.breachCount / hit.totalBreaches * 100 : 0;
+        const breachCumulativeShare = hit.totalBreaches ? hit.cumulativeBreaches / hit.totalBreaches * 100 : 0;
+
+        histogramTooltip.innerHTML = `
+          <strong>${dayLabel}</strong>
+          <div class="life-tooltip-row"><span>Passed accounts</span><span class="positive">${integer.format(b.passCount)}</span></div>
+          <div class="life-tooltip-row"><span>Share of all passes</span><span>${passShare.toFixed(1)}%</span></div>
+          <div class="life-tooltip-row"><span>Passed by this range</span><span>${integer.format(hit.cumulativePasses)}</span></div>
+          <div class="life-tooltip-row"><span>Cumulative pass share</span><span>${passCumulativeShare.toFixed(1)}%</span></div>
+          <div class="life-tooltip-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--line)"><span>Breached accounts</span><span class="negative">${integer.format(b.breachCount)}</span></div>
+          <div class="life-tooltip-row"><span>Share of all breaches</span><span>${breachShare.toFixed(1)}%</span></div>
+          <div class="life-tooltip-row"><span>Breached by this range</span><span>${integer.format(hit.cumulativeBreaches)}</span></div>
+          <div class="life-tooltip-row"><span>Cumulative breach share</span><span>${breachCumulativeShare.toFixed(1)}%</span></div>`;
+
+        histogramTooltip.hidden = false;
+        chart.style.cursor = 'help';
+        const wrapRect = histogramWrap.getBoundingClientRect();
+        const tipWidth = histogramTooltip.offsetWidth;
+        const tipHeight = histogramTooltip.offsetHeight;
+        let left = event.clientX - wrapRect.left + 13;
+        let top = event.clientY - wrapRect.top - tipHeight - 12;
+        left = Math.max(6, Math.min(left, wrapRect.width - tipWidth - 6));
+        if (top < 6) top = event.clientY - wrapRect.top + 15;
+        histogramTooltip.style.left = `${left}px`;
+        histogramTooltip.style.top = `${top}px`;
+      }
+
+      function drawLifeChart(sample) {
+        const dpr = window.devicePixelRatio || 1;
+        const zoom = Number(lifeZoom.value);
+        const baseWidth = Math.max(300, Math.floor(lifeScroll.clientWidth));
+        lifeChart.style.width = `${baseWidth * zoom}px`;
+        const rect = lifeChart.getBoundingClientRect();
+        const width = Math.max(300, Math.floor(rect.width));
+        const height = Math.max(240, Math.floor(rect.height));
+        lifeChart.width = width * dpr;
+        lifeChart.height = height * dpr;
+        lifeCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        lifeCtx.clearRect(0, 0, width, height);
+        lifeHitTargets = [];
+
+        if (!sample || !sample.path || sample.path.length < 2) return;
+
+        const points = sample.path;
+        const eodPoints = sample.eod || [];
+        const pad = { top: 18, right: 18, bottom: 45, left: 108 };
+        const plotW = width - pad.left - pad.right;
+        const plotH = height - pad.top - pad.bottom;
+        const maxDay = Math.max(1, points[points.length - 1].x);
+        const mllValues = eodPoints.flatMap(p => [p.previousMll, p.newMll]);
+        const rawMin = Math.min(...points.map(p => Math.min(p.balance, p.mll)), ...mllValues, START_MLL);
+        const rawMax = Math.max(...points.map(p => p.balance), TARGET);
+        const yPad = Math.max(200, (rawMax - rawMin) * .08);
+        const yMin = Math.floor((rawMin - yPad) / 100) * 100;
+        const yMax = Math.ceil((rawMax + yPad) / 100) * 100;
+        const x = day => pad.left + day / maxDay * plotW;
+        const y = value => pad.top + (yMax - value) / (yMax - yMin) * plotH;
+        const gridColor = css('--line');
+        const textColor = css('--muted');
+
+        lifeCtx.font = '12px Inter, system-ui, sans-serif';
+        lifeCtx.lineWidth = 1;
+        lifeCtx.strokeStyle = gridColor;
+        lifeCtx.fillStyle = textColor;
+        lifeCtx.textBaseline = 'middle';
+
+        for (let i = 0; i <= 4; i++) {
+          const yy = pad.top + plotH * i / 4;
+          const value = yMax - (yMax - yMin) * i / 4;
+          lifeCtx.beginPath();
+          lifeCtx.moveTo(pad.left, yy + .5);
+          lifeCtx.lineTo(width - pad.right, yy + .5);
+          lifeCtx.stroke();
+          lifeCtx.textAlign = 'right';
+          lifeCtx.fillText(wholeMoney.format(value), pad.left - 9, yy);
+        }
+
+        const dayCount = Math.ceil(maxDay);
+        const daySpacing = plotW / maxDay;
+        const labelEvery = Math.max(1, Math.ceil(44 / daySpacing));
+        lifeCtx.save();
+        lifeCtx.globalAlpha = .72;
+        for (let day = 0; day <= Math.floor(maxDay); day++) {
+          const xx = x(day);
+          lifeCtx.strokeStyle = gridColor;
+          lifeCtx.beginPath();
+          lifeCtx.moveTo(xx + .5, pad.top);
+          lifeCtx.lineTo(xx + .5, pad.top + plotH);
+          lifeCtx.stroke();
+        }
+        lifeCtx.restore();
+
+        lifeCtx.fillStyle = textColor;
+        lifeCtx.textAlign = 'center';
+        lifeCtx.textBaseline = 'top';
+        for (let day = 1; day <= dayCount; day++) {
+          if ((day - 1) % labelEvery !== 0 && day !== dayCount) continue;
+          const center = day > maxDay ? (day - 1 + maxDay) / 2 : day - .5;
+          lifeCtx.fillText(`D${day}`, x(center), pad.top + plotH + 10);
+        }
+
+        lifeCtx.save();
+        lifeCtx.setLineDash([7, 5]);
+        lifeCtx.strokeStyle = css('--amber');
+        lifeCtx.lineWidth = 1.5;
+        lifeCtx.beginPath();
+        lifeCtx.moveTo(pad.left, y(TARGET));
+        lifeCtx.lineTo(width - pad.right, y(TARGET));
+        lifeCtx.stroke();
+        lifeCtx.restore();
+
+        lifeCtx.strokeStyle = css('--red');
+        lifeCtx.lineWidth = 2;
+        lifeCtx.lineJoin = 'miter';
+        lifeCtx.beginPath();
+        let activeMll = START_MLL;
+        let activeX = 0;
+        lifeCtx.moveTo(x(0), y(activeMll));
+        for (const point of eodPoints) {
+          lifeCtx.lineTo(x(point.x), y(activeMll));
+          lifeCtx.lineTo(x(point.x), y(point.newMll));
+          activeMll = point.newMll;
+          activeX = point.x;
+        }
+        if (activeX < maxDay) lifeCtx.lineTo(x(maxDay), y(activeMll));
+        lifeCtx.stroke();
+
+        for (const point of eodPoints) {
+          const px = x(point.x);
+          const py = y(point.newMll);
+          lifeCtx.fillStyle = css('--red');
+          lifeCtx.strokeStyle = css('--panel');
+          lifeCtx.lineWidth = 2;
+          lifeCtx.beginPath();
+          lifeCtx.arc(px, py, 4.5, 0, Math.PI * 2);
+          lifeCtx.fill();
+          lifeCtx.stroke();
+          lifeHitTargets.push({ x: px, y: py, radius: 10, type: 'mll', data: point });
+        }
+
+        lifeCtx.strokeStyle = css('--blue');
+        lifeCtx.lineWidth = 2.5;
+        lifeCtx.lineJoin = 'round';
+        lifeCtx.lineCap = 'round';
+        lifeCtx.beginPath();
+        points.forEach((point, index) => {
+          if (index === 0) lifeCtx.moveTo(x(point.x), y(point.balance));
+          else lifeCtx.lineTo(x(point.x), y(point.balance));
+        });
+        lifeCtx.stroke();
+
+        points.forEach((point, index) => {
+          if (index === 0) return;
+          const px = x(point.x);
+          const py = y(point.balance);
+          const terminal = point.event === 'target' || point.event === 'breach';
+          lifeCtx.fillStyle = terminal
+            ? point.event === 'target' ? css('--green') : css('--red')
+            : css('--blue');
+          lifeCtx.strokeStyle = css('--panel');
+          lifeCtx.lineWidth = 1.5;
+          lifeCtx.beginPath();
+          lifeCtx.arc(px, py, terminal ? 5.5 : 3.8, 0, Math.PI * 2);
+          lifeCtx.fill();
+          lifeCtx.stroke();
+          lifeHitTargets.push({ x: px, y: py, radius: 9, type: 'trade', data: point });
+        });
+
+        lifeCtx.fillStyle = textColor;
+        lifeCtx.textAlign = 'center';
+        lifeCtx.textBaseline = 'bottom';
+        lifeCtx.fillText('Trading day', pad.left + plotW / 2, height);
+
+        lifeCtx.save();
+        lifeCtx.translate(15, pad.top + plotH / 2);
+        lifeCtx.rotate(-Math.PI / 2);
+        lifeCtx.textAlign = 'center';
+        lifeCtx.textBaseline = 'top';
+        lifeCtx.fillText('Account value', 0, 0);
+        lifeCtx.restore();
+      }
+
+      function hideLifeTooltip() {
+        lifeTooltip.hidden = true;
+      }
+
+      function showLifeTooltip(hit, event) {
+        if (hit.type === 'trade') {
+          const p = hit.data;
+          const pnlClass = p.pnl >= 0 ? 'positive' : 'negative';
+          const pnlText = `${p.pnl >= 0 ? '+' : ''}${money.format(p.pnl)}`;
+          const grossText = `${p.grossPnl >= 0 ? '+' : ''}${money.format(p.grossPnl)}`;
+          const slipText = `${p.slippage >= 0 ? '+' : ''}${money.format(p.slippage)}`;
+          lifeTooltip.innerHTML = `
+            <strong>Day ${p.day} · Trade ${p.trade} of ${p.tradesPerDay}</strong>
+            <div class="life-tooltip-row"><span>Net result</span><span class="${pnlClass}">${p.result} · ${pnlText}</span></div>
+            <div class="life-tooltip-row"><span>Gross outcome</span><span>${grossText}</span></div>
+            ${p.commission ? `<div class="life-tooltip-row"><span>Commission</span><span>−${money.format(p.commission)}</span></div>` : ''}
+            ${p.slippage ? `<div class="life-tooltip-row"><span>Fill deviation</span><span>${slipText}</span></div>` : ''}
+            <div class="life-tooltip-row"><span>Balance</span><span>${money.format(p.balance)}</span></div>
+            <div class="life-tooltip-row"><span>Active MLL</span><span>${money.format(p.mll)}</span></div>
+            <div class="life-tooltip-row"><span>Room to MLL</span><span>${money.format(p.balance - p.mll)}</span></div>
+            <div class="life-tooltip-row"><span>To target</span><span>${money.format(Math.max(0, TARGET - p.balance))}</span></div>`;
+        } else {
+          const p = hit.data;
+          lifeTooltip.innerHTML = `
+            <strong>Day ${p.day} · EOD MLL update</strong>
+            <div class="life-tooltip-row"><span>Closing balance</span><span>${money.format(p.closeBalance)}</span></div>
+            <div class="life-tooltip-row"><span>Previous MLL</span><span>${money.format(p.previousMll)}</span></div>
+            <div class="life-tooltip-row"><span>New MLL</span><span>${money.format(p.newMll)}</span></div>
+            <div class="life-tooltip-row"><span>Trail change</span><span class="${p.change > 0 ? 'negative' : ''}">${p.change > 0 ? '+' : ''}${money.format(p.change)}</span></div>
+            <div class="life-tooltip-row"><span>Room at close</span><span>${money.format(p.closeBalance - p.newMll)}</span></div>
+            ${p.locked ? '<div class="life-tooltip-row"><span>Status</span><span>Locked at $50,100</span></div>' : ''}`;
+        }
+
+        lifeTooltip.hidden = false;
+        const shellRect = lifeShell.getBoundingClientRect();
+        const tipWidth = lifeTooltip.offsetWidth;
+        const tipHeight = lifeTooltip.offsetHeight;
+        let left = event.clientX - shellRect.left + 13;
+        let top = event.clientY - shellRect.top - tipHeight - 12;
+        left = Math.max(6, Math.min(left, shellRect.width - tipWidth - 6));
+        if (top < 6) top = event.clientY - shellRect.top + 15;
+        lifeTooltip.style.left = `${left}px`;
+        lifeTooltip.style.top = `${top}px`;
+      }
+
+      function setBusy(busy) {
+        runButton.disabled = busy;
+        runButton.textContent = busy ? 'Running…' : 'Run Simulation';
+      }
+
+      function renderResults(result, config, elapsedMs) {
+        const total = config.simulations;
+        const resolved = result.passes + result.fails;
+        const passRate = result.passes / total * 100;
+        const failRate = result.fails / total * 100;
+        const timeoutRate = result.timeouts / total * 100;
+        const days = result.successDays;
+        const avg = days.length ? days.reduce((a, b) => a + b, 0) / days.length : null;
+        const median = percentile(days, .5);
+        const p90 = percentile(days, .9);
+
+        document.getElementById('pass-rate').textContent = `${passRate.toFixed(1)}%`;
+        document.getElementById('fail-rate').textContent = `${failRate.toFixed(1)}%`;
+        document.getElementById('pass-count').textContent = `${integer.format(result.passes)} of ${integer.format(total)} accounts`;
+        document.getElementById('fail-count').textContent = `${integer.format(result.fails)} of ${integer.format(total)} accounts`;
+        document.getElementById('avg-days').textContent = avg === null ? '—' : `${avg.toFixed(1)}d`;
+        document.getElementById('median-days').textContent = median === null ? '—' : `${median.toFixed(1)}d`;
+        document.getElementById('shortest-days').textContent = days.length ? `${days[0]} ${days[0] === 1 ? 'day' : 'days'}` : 'No passes';
+        document.getElementById('longest-days').textContent = days.length ? `${days[days.length - 1]} days` : 'No passes';
+        document.getElementById('p90-days').textContent = p90 === null ? '—' : `${Math.ceil(p90)} days`;
+
+        document.getElementById('bar-pass').style.width = `${passRate}%`;
+        document.getElementById('bar-fail').style.width = `${failRate}%`;
+        document.getElementById('bar-timeout').style.width = `${timeoutRate}%`;
+        document.getElementById('outcome-bar').setAttribute('aria-label',
+          `${passRate.toFixed(1)} percent passed, ${failRate.toFixed(1)} percent failed${result.timeouts ? `, ${timeoutRate.toFixed(1)} percent unresolved` : ''}.`);
+
+        document.getElementById('status').textContent =
+          `${integer.format(total)} accounts · fresh random run · ${(elapsedMs / 1000).toFixed(2)}s`;
+
+        const timeoutNote = document.getElementById('timeout-note');
+        if (result.timeouts) {
+          timeoutNote.textContent = `${integer.format(result.timeouts)} runs remained unresolved after ${integer.format(MAX_DAYS)} trading days. They are shown in amber and excluded from pass/fail timing statistics.`;
+          timeoutNote.classList.add('show');
+        } else {
+          timeoutNote.classList.remove('show');
+        }
+
+        const breachDays = result.failureDays;
+        const hasResolvedOutcomes = days.length > 0 || breachDays.length > 0;
+        lastHistogram = makeHistogram(days, breachDays);
+        chartEmpty.style.display = hasResolvedOutcomes ? 'none' : 'grid';
+        chartEmpty.textContent = hasResolvedOutcomes ? '' : 'No accounts passed or breached under these assumptions.';
+        drawChart(lastHistogram);
+        chart.setAttribute('aria-label', hasResolvedOutcomes
+          ? `Grouped outcome chart showing ${integer.format(result.passes)} passed accounts and ${integer.format(result.fails)} breached accounts by trading day.`
+          : 'No accounts passed or breached in this simulation.');
+
+        lastLife = { path: result.samplePath, eod: result.sampleEod, outcome: result.sampleOutcome };
+        drawLifeChart(lastLife);
+        const outcomeNode = document.getElementById('life-outcome');
+        outcomeNode.classList.remove('breached', 'unresolved');
+        if (result.sampleOutcome.type === 'pass') {
+          outcomeNode.textContent = `Passed on day ${result.sampleOutcome.day}`;
+        } else if (result.sampleOutcome.type === 'breach') {
+          outcomeNode.textContent = `MLL breached on day ${result.sampleOutcome.day}`;
+          outcomeNode.classList.add('breached');
+        } else {
+          outcomeNode.textContent = `Unresolved after ${integer.format(result.sampleOutcome.day)} days`;
+          outcomeNode.classList.add('unresolved');
+        }
+        lifeChart.setAttribute('aria-label',
+          `Sample account ${result.sampleOutcome.type === 'pass' ? 'reached the target' : result.sampleOutcome.type === 'breach' ? 'breached its maximum loss limit' : 'remained unresolved'} on trading day ${result.sampleOutcome.day}.`);
+        document.getElementById('life-help').textContent = result.sampleTruncated
+          ? 'This unusually long sample exceeded 50,000 plotted trades, so the middle of its path was shortened. Run again for another sample.'
+          : 'Hover a blue trade point or red EOD point for details. Increase zoom, then scroll horizontally to inspect longer runs.';
+      }
+
+      function runSimulation() {
+        const config = readConfig();
+        const error = validate(config);
+        errorBox.textContent = error;
+        errorBox.classList.toggle('show', Boolean(error));
+        if (error) return;
+
+        config.seed = freshSeed();
+
+        if (activeWorker) activeWorker.terminate();
+        setBusy(true);
+        document.getElementById('status').textContent = `Simulating 0 of ${integer.format(config.simulations)} accounts…`;
+        const started = performance.now();
+        const blob = new Blob([`(${workerSource.toString()})();`], { type: 'text/javascript' });
+        const workerUrl = URL.createObjectURL(blob);
+        activeWorker = new Worker(workerUrl);
+
+        activeWorker.onmessage = (event) => {
+          const message = event.data;
+          if (message.type === 'progress') {
+            document.getElementById('status').textContent =
+              `Simulating ${integer.format(message.completed)} of ${integer.format(message.total)} accounts…`;
+            return;
+          }
+          if (message.type === 'done') {
+            const elapsed = performance.now() - started;
+            renderResults(message, config, elapsed);
+            setBusy(false);
+            activeWorker.terminate();
+            activeWorker = null;
+            URL.revokeObjectURL(workerUrl);
+          }
+        };
+
+        activeWorker.onerror = () => {
+          setBusy(false);
+          errorBox.textContent = 'The simulation could not start in this browser. Try opening the file in a current version of Chrome, Edge, Firefox, or Safari.';
+          errorBox.classList.add('show');
+          activeWorker.terminate();
+          activeWorker = null;
+          URL.revokeObjectURL(workerUrl);
+        };
+
+        activeWorker.postMessage(config);
+      }
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        runSimulation();
+      });
+
+      const executionNumericFields = new Set([
+        fields.contracts,
+        fields.customPointValue,
+        fields.customTickSize,
+        fields.customCommission,
+        fields.slippageAmount
+      ]);
+      Object.values(fields).forEach(field => field.addEventListener('input', () => {
+        if (executionNumericFields.has(field)) updateExecutionControls();
+        else updateDerived();
+      }));
+      tradesMode.addEventListener('change', updateExecutionControls);
+      executionProduct.addEventListener('change', updateExecutionControls);
+      commissionEnabled.addEventListener('change', updateExecutionControls);
+      commissionSource.addEventListener('change', updateExecutionControls);
+      slippageEnabled.addEventListener('change', updateExecutionControls);
+      slippageType.addEventListener('change', updateExecutionControls);
+      sizingInstrument.addEventListener('change', updateSizing);
+      sizingTradeableOnly.addEventListener('change', updateSizing);
+
+      chart.addEventListener('pointermove', (event) => {
+        const rect = chart.getBoundingClientRect();
+        const pointerX = event.clientX - rect.left;
+        const pointerY = event.clientY - rect.top;
+        const hit = histogramHitTargets.find(target => {
+          const overBar = pointerX >= target.barLeft && pointerX <= target.barRight &&
+            pointerY >= target.barTop && pointerY <= target.barBottom;
+          const overLabel = pointerX >= target.labelLeft && pointerX <= target.labelRight &&
+            pointerY >= target.labelTop && pointerY <= target.labelBottom;
+          return overBar || overLabel;
+        });
+
+        if (hit) showHistogramTooltip(hit, event);
+        else hideHistogramTooltip();
+      });
+
+      chart.addEventListener('pointerleave', hideHistogramTooltip);
+
+      lifeZoom.addEventListener('input', () => {
+        lifeZoomValue.textContent = `${lifeZoom.value}×`;
+        hideLifeTooltip();
+        drawLifeChart(lastLife);
+      });
+
+      lifeChart.addEventListener('pointermove', (event) => {
+        const rect = lifeChart.getBoundingClientRect();
+        const pointerX = event.clientX - rect.left;
+        const pointerY = event.clientY - rect.top;
+        let nearest = null;
+        let nearestDistance = Infinity;
+
+        for (const hit of lifeHitTargets) {
+          const dx = pointerX - hit.x;
+          const dy = pointerY - hit.y;
+          const distance = dx * dx + dy * dy;
+          if (distance <= hit.radius * hit.radius && distance < nearestDistance) {
+            nearest = hit;
+            nearestDistance = distance;
+          }
+        }
+
+        if (nearest) showLifeTooltip(nearest, event);
+        else hideLifeTooltip();
+      });
+
+      lifeChart.addEventListener('pointerleave', hideLifeTooltip);
+      lifeScroll.addEventListener('scroll', hideLifeTooltip, { passive: true });
+
+      resetButton.addEventListener('click', () => {
+        Object.entries(defaults).forEach(([key, value]) => { fields[key].value = value; });
+        tradesMode.value = 'fixed';
+        executionProduct.value = 'MNQ';
+        commissionEnabled.checked = false;
+        commissionSource.value = 'preset';
+        slippageEnabled.checked = false;
+        slippageType.value = 'dollars';
+        updateExecutionControls();
+        runSimulation();
+      });
+
+      window.addEventListener('resize', () => {
+        drawChart(lastHistogram);
+        drawLifeChart(lastLife);
+      });
+      updateExecutionControls();
+      runSimulation();
+    })();
+  </script>
+</body>
+</html>
