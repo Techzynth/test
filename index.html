@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Monte Carlo simulator for LucidFlex $50K funded accounts using the $50,100 locked MLL and $54,100 max-payout target.">
-  <title>LucidFlex 50K Monte Carlo</title>
+  <meta name="description" content="Configurable Monte Carlo simulator for evaluation and funded trading accounts.">
+  <title>LucidFlex 50K Funded Monte Carlo</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1220'/%3E%3Cpath d='M12 45h40M16 39l9-10 8 6 15-18' fill='none' stroke='%2338d9a9' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <style>
     :root {
@@ -128,14 +128,16 @@
       column-gap: 10px;
     }
 
-    .strategy-risk { grid-area: 1 / 1; }
-    .strategy-rr { grid-area: 1 / 2; }
-    .strategy-win { grid-area: 2 / 1; }
-    .strategy-simulations { grid-area: 2 / 2; }
+    .account-card { grid-area: 1 / 1 / auto / 3; }
+    .strategy-heading { grid-area: 2 / 1 / auto / 3; margin-top: 14px; }
+    .strategy-risk { grid-area: 3 / 1; }
+    .strategy-rr { grid-area: 3 / 2; }
+    .strategy-win { grid-area: 4 / 1; }
+    .strategy-simulations { grid-area: 4 / 2; }
 
     .strategy-trades {
       display: grid;
-      grid-area: 3 / 1 / auto / 3;
+      grid-area: 5 / 1 / auto / 3;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       column-gap: 10px;
       align-items: end;
@@ -151,6 +153,91 @@
     #sim-form > .actions,
     #sim-form > .error {
       grid-column: 1 / -1;
+    }
+
+    .account-card {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(7, 11, 19, .38);
+    }
+
+    .account-card h2 { font-size: .9rem; }
+
+    .account-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .account-grid .field { margin-top: 0; }
+    .account-grid .full-width { grid-column: 1 / -1; }
+
+    .segmented-control {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 44px;
+      padding: 3px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #09101d;
+    }
+
+    .segmented-control input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .segmented-control label {
+      display: grid;
+      place-items: center;
+      border-radius: 7px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: .78rem;
+      font-weight: 750;
+    }
+
+    .segmented-control input:checked + label {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .segmented-control input:focus-visible + label {
+      outline: 3px solid var(--focus);
+      outline-offset: 1px;
+    }
+
+    .account-rule-toggle {
+      display: flex;
+      min-height: 44px;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #09101d;
+      cursor: pointer;
+    }
+
+    .account-rule-toggle input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      accent-color: var(--green);
+    }
+
+    .account-rule-toggle span { font-size: .78rem; font-weight: 750; }
+
+    .account-rule-note {
+      grid-column: 1 / -1;
+      margin: -2px 0 0;
+      color: var(--muted);
+      font-size: .7rem;
+      line-height: 1.4;
     }
 
     h2 {
@@ -230,7 +317,8 @@
       font-size: .78rem;
     }
 
-    input[type="number"] {
+    input[type="number"],
+    input[type="text"] {
       width: 100%;
       min-height: 44px;
       padding: 10px 44px 10px 12px;
@@ -242,6 +330,8 @@
     }
 
     input[type="number"]:hover { border-color: #3b4c68; }
+    input[type="text"]:hover { border-color: #3b4c68; }
+    input[type="text"] { padding-right: 12px; }
 
     .split-fields {
       display: grid;
@@ -935,7 +1025,8 @@
       .life-scroll canvas { height: 290px; }
 
       #sim-form,
-      .execution-card { grid-template-columns: 1fr; }
+      .execution-card,
+      .account-grid { grid-template-columns: 1fr; }
 
       #sim-form > .field,
       .execution-card > .field {
@@ -947,6 +1038,20 @@
         display: grid;
         grid-template-columns: 1fr;
       }
+
+      .account-card,
+      .strategy-heading,
+      .strategy-risk,
+      .strategy-rr,
+      .strategy-win,
+      .strategy-simulations,
+      .strategy-trades {
+        grid-area: auto;
+        grid-column: 1 / -1;
+      }
+
+      .account-grid .full-width,
+      .account-rule-note { grid-column: 1; }
 
       .sizing-table-wrap { max-height: 620px; }
       .sizing-table, .sizing-table tbody { display: block; width: 100%; }
@@ -995,26 +1100,122 @@
   <main class="app">
     <header class="topbar">
       <div>
-        <p class="eyebrow">Funded account survival lab</p>
-        <h1>LucidFlex 50K Monte Carlo</h1>
-        <p class="subtitle">Estimate how often a strategy reaches the $54,100 max-payout balance before touching the account’s active loss floor.</p>
+        <p class="eyebrow" id="page-eyebrow">Funded account survival lab</p>
+        <h1 id="page-title">LucidFlex 50K Funded Monte Carlo</h1>
+        <p class="subtitle" id="page-subtitle">Estimate how often a strategy reaches its profit target before touching the account’s active loss floor.</p>
       </div>
-      <div class="rule-chip"><strong>$50,100</strong> locked MLL · <strong>$54,100</strong> target</div>
+      <div class="rule-chip" id="rule-chip"><strong>$50,100</strong> locked MLL · <strong>$54,100</strong> target</div>
     </header>
 
     <div class="layout">
       <aside class="panel controls" aria-labelledby="controls-title">
-        <h2 id="controls-title">Strategy assumptions</h2>
-        <p class="section-note">Every trade is sampled independently from the win rate below.</p>
-
         <form id="sim-form" novalidate>
+          <section class="account-card" aria-labelledby="account-details-title">
+            <h2 id="account-details-title">Account details</h2>
+            <p class="section-note">Define the account, objective, and risk rules used by every simulation.</p>
+
+            <div class="account-grid">
+              <div class="field">
+                <div class="field-head">
+                  <label for="account-name">Custom account name</label>
+                  <span class="hint">page title</span>
+                </div>
+                <input id="account-name" type="text" maxlength="40" value="LucidFlex 50K" autocomplete="off">
+              </div>
+
+              <div class="field">
+                <div class="field-head"><label>Account stage</label></div>
+                <div class="segmented-control" role="radiogroup" aria-label="Account stage">
+                  <input id="account-type-eval" name="account-type" type="radio" value="Eval">
+                  <label for="account-type-eval">Evaluation</label>
+                  <input id="account-type-funded" name="account-type" type="radio" value="Funded" checked>
+                  <label for="account-type-funded">Funded</label>
+                </div>
+              </div>
+
+              <div class="field">
+                <div class="field-head"><label for="start-balance">Starting balance</label></div>
+                <div class="input-wrap">
+                  <input id="start-balance" type="number" min="1000" max="10000000" step="100" value="50000" inputmode="decimal">
+                  <span class="suffix">USD</span>
+                </div>
+              </div>
+
+              <div class="field">
+                <div class="field-head"><label for="profit-target">Profit target</label><span class="hint">above start</span></div>
+                <div class="input-wrap">
+                  <input id="profit-target" type="number" min="1" max="1000000" step="100" value="4100" inputmode="decimal">
+                  <span class="suffix">USD</span>
+                </div>
+              </div>
+
+              <div class="field">
+                <div class="field-head"><label for="mll-amount">Maximum loss limit</label><span class="hint">below peak</span></div>
+                <div class="input-wrap">
+                  <input id="mll-amount" type="number" min="1" max="1000000" step="100" value="2000" inputmode="decimal">
+                  <span class="suffix">USD</span>
+                </div>
+              </div>
+
+              <div class="field">
+                <div class="field-head"><label for="drawdown-type">Drawdown type</label></div>
+                <select id="drawdown-type">
+                  <option value="eod">EOD trailing</option>
+                  <option value="intraday">Intraday trailing</option>
+                </select>
+              </div>
+
+              <label class="account-rule-toggle" for="dll-enabled">
+                <input id="dll-enabled" type="checkbox">
+                <span>Daily loss limit</span>
+              </label>
+              <div class="field" id="dll-field" hidden>
+                <div class="field-head"><label for="dll-amount">DLL amount</label></div>
+                <div class="input-wrap">
+                  <input id="dll-amount" type="number" min="1" max="1000000" step="50" value="500" inputmode="decimal">
+                  <span class="suffix">USD</span>
+                </div>
+              </div>
+
+              <label class="account-rule-toggle" for="locked-mll-enabled">
+                <input id="locked-mll-enabled" type="checkbox" checked>
+                <span>Lock trailing MLL</span>
+              </label>
+              <div class="field" id="locked-mll-field">
+                <div class="field-head"><label for="locked-mll-floor">Locked MLL floor</label><span class="hint">absolute</span></div>
+                <div class="input-wrap">
+                  <input id="locked-mll-floor" type="number" min="0" max="10000000" step="100" value="50100" inputmode="decimal">
+                  <span class="suffix">USD</span>
+                </div>
+              </div>
+
+              <label class="account-rule-toggle" for="consistency-enabled">
+                <input id="consistency-enabled" type="checkbox">
+                <span>Consistency rule</span>
+              </label>
+              <div class="field" id="consistency-field" hidden>
+                <div class="field-head"><label for="consistency-percent">Maximum consistency</label></div>
+                <div class="input-wrap">
+                  <input id="consistency-percent" type="number" min="1" max="100" step="1" value="50" inputmode="decimal">
+                  <span class="suffix">%</span>
+                </div>
+              </div>
+              <p class="account-rule-note" id="account-rule-note">EOD trailing drawdown · MLL locks at $50,100 · no daily loss or consistency rule.</p>
+            </div>
+          </section>
+
+          <div class="strategy-heading">
+            <h2 id="controls-title">Strategy assumptions</h2>
+            <p class="section-note">Every trade is sampled independently from the win rate below.</p>
+          </div>
+
           <div class="field strategy-risk">
             <div class="field-head">
               <label for="risk">Dollar risk per trade</label>
               <span class="hint">fixed loss</span>
             </div>
             <div class="input-wrap">
-              <input id="risk" name="risk" type="number" min="1" max="2000" step="1" value="200" inputmode="decimal">
+              <input id="risk" name="risk" type="number" min="1" max="1000000" step="1" value="200" inputmode="decimal">
               <span class="suffix">USD</span>
             </div>
           </div>
@@ -1074,11 +1275,11 @@
 
           <div class="field strategy-simulations">
             <div class="field-head">
-              <label for="simulations">Funded accounts</label>
+              <label for="simulations">Simulated accounts</label>
               <span class="hint">runs</span>
             </div>
             <div class="input-wrap">
-              <input id="simulations" name="simulations" type="number" min="100" max="100000" step="100" value="100000" inputmode="numeric">
+              <input id="simulations" name="simulations" type="number" min="1" max="1000000" step="1" value="100000" inputmode="numeric">
               <span class="suffix">runs</span>
             </div>
           </div>
@@ -1191,7 +1392,7 @@
           <article class="metric pass">
             <span class="label"><span class="dot"></span>Pass rate</span>
             <strong class="value" id="pass-rate">—</strong>
-            <small id="pass-count">Accounts reaching $54,100</small>
+            <small id="pass-count">Accounts reaching the target</small>
           </article>
           <article class="metric fail">
             <span class="label"><span class="dot"></span>Fail rate</span>
@@ -1233,7 +1434,7 @@
 
           <div class="chart-wrap">
             <h3 class="chart-title">Account outcomes by trading day</h3>
-            <p class="chart-caption">Each trading-day group shows accounts that reached $54,100 in green and accounts that breached the active MLL in red.</p>
+            <p class="chart-caption" id="outcome-chart-caption">Each trading-day group shows accounts that reached the target in green and accounts that breached the active MLL in red.</p>
             <div class="chart-legend outcome-legend" aria-label="Outcome chart legend">
               <span class="legend-item pass"><span class="dot"></span>Passed</span>
               <span class="legend-item fail"><span class="dot"></span>Breached</span>
@@ -1246,15 +1447,15 @@
           <div class="chart-wrap life-wrap">
             <div class="life-heading">
               <div>
-                <h3 class="chart-title">Life of one funded account</h3>
-                <p class="chart-caption" style="margin-bottom:0">A fresh sample from this batch, with the loss floor adjusted after each EOD close.</p>
+                <h3 class="chart-title" id="life-chart-title">Life of one funded account</h3>
+                <p class="chart-caption" id="life-chart-caption" style="margin-bottom:0">A fresh sample from this batch, with the loss floor adjusted after each EOD close.</p>
               </div>
               <span class="life-outcome" id="life-outcome">Awaiting run</span>
             </div>
             <div class="chart-legend" aria-label="Account life chart legend">
               <span class="legend-item"><span class="legend-line"></span>Account balance</span>
               <span class="legend-item"><span class="legend-line mll"></span>Active MLL</span>
-              <span class="legend-item"><span class="legend-line target"></span>$54,100 target</span>
+              <span class="legend-item"><span class="legend-line target"></span><span id="target-legend">$54,100 target</span></span>
             </div>
             <div class="life-tools">
               <span class="chart-caption" style="margin:0">Vertical lines separate trading days.</span>
@@ -1266,11 +1467,11 @@
             </div>
             <div class="life-chart-shell" id="life-chart-shell">
               <div class="life-scroll" id="life-scroll">
-                <canvas id="life-chart" role="img" aria-label="Sample funded-account balance and end-of-day maximum loss limit by trade and trading day"></canvas>
+                <canvas id="life-chart" role="img" aria-label="Sample account balance and active maximum loss limit by trade and trading day"></canvas>
               </div>
               <div class="life-tooltip" id="life-tooltip" role="tooltip" hidden></div>
             </div>
-            <p class="life-help" id="life-help">Hover a blue trade point or red EOD point for details. Increase zoom, then scroll horizontally to inspect longer runs.</p>
+            <p class="life-help" id="life-help">Hover a blue trade point or red MLL point for details. Increase zoom, then scroll horizontally to inspect longer runs.</p>
           </div>
 
           <p class="timeout-note" id="timeout-note"></p>
@@ -1327,9 +1528,9 @@
         </section>
 
         <div class="assumptions" aria-label="Model assumptions">
-          <div class="assumption"><strong>Drawdown:</strong> starts at $48,000, trails by end-of-day, and locks at $50,100.</div>
+          <div class="assumption" id="drawdown-assumption"><strong>Drawdown:</strong> starts at $48,000, trails by end-of-day, and locks at $50,100.</div>
           <div class="assumption"><strong>Outcomes:</strong> fixed gross loss or R-multiple win, adjusted by any enabled round-trip commission and ± fill deviation.</div>
-          <div class="assumption"><strong>Stopping rule:</strong> pass at $54,100; fail immediately when balance reaches the active MLL.</div>
+          <div class="assumption" id="stopping-assumption"><strong>Stopping rule:</strong> pass at $54,100; fail immediately when balance reaches the active MLL.</div>
         </div>
       </section>
     </div>
@@ -1339,10 +1540,6 @@
     (() => {
       'use strict';
 
-      const START_BALANCE = 50000;
-      const START_MLL = 48000;
-      const LOCKED_MLL = 50100;
-      const TARGET = 54100;
       const MAX_DAYS = 10000;
       const CONTRACTS = Object.freeze({
         MNQ: { micro: 'MNQ', mini: 'NQ', name: 'Nasdaq-100', pointValue: 2, tickSize: .25, tickValue: .5 },
@@ -1362,6 +1559,13 @@
       });
 
       const defaults = {
+        accountName: 'LucidFlex 50K',
+        startBalance: 50000,
+        profitTarget: 4100,
+        mllAmount: 2000,
+        dllAmount: 500,
+        lockedMllFloor: 50100,
+        consistencyPercent: 50,
         risk: 200,
         rr: 2,
         winRate: 45,
@@ -1407,13 +1611,29 @@
       const slippageType = document.getElementById('slippage-type');
       const slippageFields = document.getElementById('slippage-fields');
       const customSpecFields = document.getElementById('custom-spec-fields');
+      const accountTypeInputs = [...document.querySelectorAll('input[name="account-type"]')];
+      const drawdownType = document.getElementById('drawdown-type');
+      const dllEnabled = document.getElementById('dll-enabled');
+      const dllField = document.getElementById('dll-field');
+      const lockedMllEnabled = document.getElementById('locked-mll-enabled');
+      const lockedMllField = document.getElementById('locked-mll-field');
+      const consistencyEnabled = document.getElementById('consistency-enabled');
+      const consistencyField = document.getElementById('consistency-field');
       let lastHistogram = null;
       let lastLife = null;
+      let lastConfig = null;
       let histogramHitTargets = [];
       let lifeHitTargets = [];
       let activeWorker = null;
 
       const fields = {
+        accountName: document.getElementById('account-name'),
+        startBalance: document.getElementById('start-balance'),
+        profitTarget: document.getElementById('profit-target'),
+        mllAmount: document.getElementById('mll-amount'),
+        dllAmount: document.getElementById('dll-amount'),
+        lockedMllFloor: document.getElementById('locked-mll-floor'),
+        consistencyPercent: document.getElementById('consistency-percent'),
         risk: document.getElementById('risk'),
         rr: document.getElementById('rr'),
         winRate: document.getElementById('win-rate'),
@@ -1458,6 +1678,9 @@
         const spec = getExecutionSpec();
         const isRange = tradesMode.value === 'range';
         const contracts = Number(fields.contracts.value);
+        const startBalance = Number(fields.startBalance.value);
+        const profitTargetAmount = Number(fields.profitTarget.value);
+        const mllAmount = Number(fields.mllAmount.value);
         const commissionPerSide = commissionSource.value === 'custom'
           ? Number(fields.customCommission.value)
           : spec.commissionPerSide;
@@ -1467,6 +1690,20 @@
         if (slippageType.value === 'ticks') slippageMaxDollars = slipAmount * spec.tickValue * contracts;
 
         return {
+          accountName: fields.accountName.value.trim(),
+          accountType: accountTypeInputs.find(input => input.checked)?.value || 'Funded',
+          startBalance,
+          profitTargetAmount,
+          target: startBalance + profitTargetAmount,
+          mllAmount,
+          startMLL: startBalance - mllAmount,
+          dllEnabled: dllEnabled.checked,
+          dllAmount: Number(fields.dllAmount.value),
+          drawdownType: drawdownType.value,
+          lockedMllEnabled: lockedMllEnabled.checked,
+          lockedMLL: Number(fields.lockedMllFloor.value),
+          consistencyEnabled: consistencyEnabled.checked,
+          consistencyPercent: Number(fields.consistencyPercent.value),
           risk: Number(fields.risk.value),
           rr: Number(fields.rr.value),
           winRate: Number(fields.winRate.value),
@@ -1486,22 +1723,25 @@
           slippageAmount: slipAmount,
           slippageType: slippageType.value,
           slippageMaxDollars: slippageEnabled.checked ? slippageMaxDollars : 0,
-          startBalance: START_BALANCE,
-          startMLL: START_MLL,
-          lockedMLL: LOCKED_MLL,
-          target: TARGET,
           maxDays: MAX_DAYS
         };
       }
 
       function validate(c) {
-        if (!Number.isFinite(c.risk) || c.risk < 1 || c.risk > 2000) return 'Risk must be between $1 and $2,000.';
+        if (!c.accountName || c.accountName.length > 40) return 'Account name must contain between 1 and 40 characters.';
+        if (!Number.isFinite(c.startBalance) || c.startBalance < 1000 || c.startBalance > 10000000) return 'Starting balance must be between $1,000 and $10,000,000.';
+        if (!Number.isFinite(c.profitTargetAmount) || c.profitTargetAmount < 1 || c.profitTargetAmount > 1000000) return 'Profit target must be between $1 and $1,000,000.';
+        if (!Number.isFinite(c.mllAmount) || c.mllAmount < 1 || c.mllAmount >= c.startBalance) return 'Maximum loss limit must be greater than $0 and less than the starting balance.';
+        if (c.dllEnabled && (!Number.isFinite(c.dllAmount) || c.dllAmount < 1 || c.dllAmount > 1000000)) return 'Daily loss limit must be between $1 and $1,000,000.';
+        if (c.lockedMllEnabled && (!Number.isFinite(c.lockedMLL) || c.lockedMLL < c.startMLL || c.lockedMLL >= c.target)) return `Locked MLL floor must be between ${money.format(c.startMLL)} and less than the ${money.format(c.target)} target.`;
+        if (c.consistencyEnabled && (!Number.isFinite(c.consistencyPercent) || c.consistencyPercent < 1 || c.consistencyPercent > 100)) return 'Consistency must be between 1% and 100%.';
+        if (!Number.isFinite(c.risk) || c.risk < 1 || c.risk > 1000000) return 'Risk must be between $1 and $1,000,000.';
         if (!Number.isFinite(c.rr) || c.rr < .05 || c.rr > 20) return 'R:R must be between 0.05 and 20.';
         if (!Number.isFinite(c.winRate) || c.winRate <= 0 || c.winRate >= 100) return 'Win rate must be greater than 0% and less than 100%.';
         if (!Number.isInteger(c.tradesMin) || c.tradesMin < 1 || c.tradesMin > 100) return 'Minimum trades per day must be a whole number from 1 to 100.';
         if (!Number.isInteger(c.tradesMax) || c.tradesMax < 1 || c.tradesMax > 100) return 'Maximum trades per day must be a whole number from 1 to 100.';
         if (c.tradesMin > c.tradesMax) return 'Minimum trades per day cannot be greater than the maximum.';
-        if (!Number.isInteger(c.simulations) || c.simulations < 100 || c.simulations > 100000) return 'Funded accounts must be a whole number from 100 to 100,000.';
+        if (!Number.isInteger(c.simulations) || c.simulations < 1 || c.simulations > 1000000) return 'Simulated accounts must be a whole number from 1 to 1,000,000.';
         if (!Number.isFinite(c.pointValue) || c.pointValue <= 0 || c.pointValue > 10000) return 'Custom $/point must be greater than $0 and no more than $10,000.';
         if (!Number.isFinite(c.tickSize) || c.tickSize <= 0 || c.tickSize > 1000) return 'Custom tick size must be greater than 0 and no more than 1,000 points.';
         if (!Number.isInteger(c.contracts) || c.contracts < 1 || c.contracts > c.maxContracts) return `${c.product} contracts must be a whole number from 1 to ${c.maxContracts}.`;
@@ -1510,7 +1750,54 @@
         return '';
       }
 
+      function updateAccountControls() {
+        dllField.hidden = !dllEnabled.checked;
+        lockedMllField.hidden = !lockedMllEnabled.checked;
+        consistencyField.hidden = !consistencyEnabled.checked;
+
+        const c = readConfig();
+        const accountName = c.accountName || 'Custom Account';
+        const stage = c.accountType;
+        const drawdownLabel = c.drawdownType === 'intraday' ? 'Intraday trailing' : 'EOD trailing';
+        const title = `${accountName} ${stage} Monte Carlo`;
+        document.title = title;
+        document.getElementById('page-title').textContent = title;
+        document.getElementById('page-eyebrow').textContent = `${stage} account survival lab`;
+        document.getElementById('page-subtitle').textContent = Number.isFinite(c.target)
+          ? `Estimate how often a strategy reaches ${wholeMoney.format(c.target)} before touching the account’s active loss floor.`
+          : 'Estimate how often a strategy reaches its profit target before touching the account’s active loss floor.';
+
+        const chip = document.getElementById('rule-chip');
+        chip.innerHTML = c.lockedMllEnabled && Number.isFinite(c.lockedMLL) && Number.isFinite(c.target)
+          ? `<strong>${wholeMoney.format(c.lockedMLL)}</strong> locked MLL · <strong>${wholeMoney.format(c.target)}</strong> target`
+          : `<strong>${drawdownLabel}</strong> MLL · <strong>${Number.isFinite(c.target) ? wholeMoney.format(c.target) : '—'}</strong> target`;
+
+        const ruleParts = [drawdownLabel];
+        if (Number.isFinite(c.startMLL)) ruleParts.push(`starts at ${wholeMoney.format(c.startMLL)}`);
+        ruleParts.push(c.lockedMllEnabled && Number.isFinite(c.lockedMLL) ? `locks at ${wholeMoney.format(c.lockedMLL)}` : 'no MLL lock');
+        ruleParts.push(c.dllEnabled && Number.isFinite(c.dllAmount) ? `${wholeMoney.format(c.dllAmount)} DLL` : 'no DLL');
+        if (c.consistencyEnabled && Number.isFinite(c.consistencyPercent) && c.consistencyPercent > 0) {
+          ruleParts.push(`${distance.format(c.consistencyPercent)}% consistency · at least ${Math.ceil(100 / c.consistencyPercent)} profitable days`);
+        } else {
+          ruleParts.push('no consistency rule');
+        }
+        document.getElementById('account-rule-note').textContent = `${ruleParts.join(' · ')}.`;
+
+        document.getElementById('outcome-chart-caption').textContent = Number.isFinite(c.target)
+          ? `Each trading-day group shows accounts that reached ${wholeMoney.format(c.target)} in green and accounts that breached the active MLL in red.`
+          : 'Each trading-day group shows passed accounts in green and breached accounts in red.';
+        document.getElementById('life-chart-title').textContent = `Life of one ${stage.toLowerCase()} account`;
+        document.getElementById('life-chart-caption').textContent = c.drawdownType === 'intraday'
+          ? 'A fresh sample from this batch, with the loss floor recalculated after every completed trade.'
+          : 'A fresh sample from this batch, with the loss floor adjusted after each EOD close.';
+        document.getElementById('target-legend').textContent = `${Number.isFinite(c.target) ? wholeMoney.format(c.target) : '—'} target`;
+
+        document.getElementById('drawdown-assumption').innerHTML = `<strong>Drawdown:</strong> starts at ${Number.isFinite(c.startMLL) ? wholeMoney.format(c.startMLL) : '—'}, trails ${c.drawdownType === 'intraday' ? 'after each completed trade' : 'at end of day'}, and ${c.lockedMllEnabled && Number.isFinite(c.lockedMLL) ? `locks at ${wholeMoney.format(c.lockedMLL)}` : 'has no locked floor'}.`;
+        document.getElementById('stopping-assumption').innerHTML = `<strong>Stopping rule:</strong> ${c.consistencyEnabled ? `pass at EOD when above ${Number.isFinite(c.target) ? wholeMoney.format(c.target) : 'the target'} and at or below ${distance.format(c.consistencyPercent)}% consistency` : `pass at ${Number.isFinite(c.target) ? wholeMoney.format(c.target) : 'the target'}`}; fail immediately when balance reaches the active MLL${c.dllEnabled && Number.isFinite(c.dllAmount) ? `; stop trading for the day after a ${wholeMoney.format(c.dllAmount)} daily loss` : ''}.`;
+      }
+
       function updateDerived() {
+        updateAccountControls();
         const c = readConfig();
         const grossWin = c.risk * c.rr;
         const averageWin = grossWin - c.commissionRoundTrip;
@@ -1646,20 +1933,31 @@
           let fails = 0;
           let timeouts = 0;
           let samplePath = [];
-          let sampleEod = [];
+          let sampleMll = [];
           let sampleOutcome = null;
           let sampleTruncated = false;
           const maxSamplePoints = 50000;
 
+          function nextMll(currentMll, referenceBalance) {
+            const rawFloor = referenceBalance - c.mllAmount;
+            const trailedFloor = c.lockedMllEnabled ? Math.min(rawFloor, c.lockedMLL) : rawFloor;
+            return Math.max(currentMll, trailedFloor);
+          }
+
           for (let run = 0; run < c.simulations; run++) {
             let balance = c.startBalance;
             let mll = c.startMLL;
+            let trailingReference = c.startBalance;
+            let largestDayProfit = 0;
             let resolved = false;
             const capture = run === 0;
-            if (capture) samplePath.push({ x: 0, day: 0, trade: 0, balance, mll, pnl: 0, result: 'Start', event: 'start' });
+            if (capture) samplePath.push({ x: 0, day: 0, trade: 0, balance, mll, pnl: 0, dayPnl: 0, result: 'Start', event: 'start' });
 
             for (let day = 1; day <= c.maxDays && !resolved; day++) {
+              const dayStartBalance = balance;
               const dayTrades = c.tradesMin + Math.floor(random() * (c.tradesMax - c.tradesMin + 1));
+              let lastSampleTrade = null;
+
               for (let trade = 0; trade < dayTrades; trade++) {
                 const won = random() < winProbability;
                 const grossPnl = won ? winAmount : -c.risk;
@@ -1667,37 +1965,79 @@
                 const commission = c.commissionEnabled ? c.commissionRoundTrip : 0;
                 const pnl = grossPnl + slippage - commission;
                 balance += pnl;
+                const pointX = day - 1 + (trade + 1) / dayTrades;
+                const previousMll = mll;
+                const breached = balance <= mll;
+
+                if (!breached && c.drawdownType === 'intraday') {
+                  trailingReference = Math.max(trailingReference, balance);
+                  mll = nextMll(mll, trailingReference);
+                  if (capture && mll > previousMll && sampleMll.length < maxSamplePoints) {
+                    sampleMll.push({
+                      x: pointX,
+                      day,
+                      trade: trade + 1,
+                      updateType: 'Intraday',
+                      closeBalance: balance,
+                      referenceBalance: trailingReference,
+                      previousMll,
+                      newMll: mll,
+                      change: mll - previousMll,
+                      locked: c.lockedMllEnabled && mll >= c.lockedMLL
+                    });
+                  } else if (capture && mll > previousMll) {
+                    sampleTruncated = true;
+                  }
+                }
+
+                const dayPnl = balance - dayStartBalance;
+                const dllHit = !breached && c.dllEnabled && dayPnl <= -c.dllAmount;
+                const hitTarget = !c.consistencyEnabled && balance >= c.target;
                 let sampleTrade = null;
                 let sampleTradeStored = false;
 
                 if (capture) {
                   sampleTrade = {
-                    x: day - 1 + (trade + 1) / dayTrades,
+                    x: pointX,
                     day,
                     trade: trade + 1,
                     tradesPerDay: dayTrades,
                     balance,
                     mll,
+                    previousMll,
                     grossPnl,
                     slippage,
                     commission,
                     pnl,
+                    dayPnl,
+                    dllHit,
                     result: won ? 'Win' : 'Loss',
-                    event: 'trade'
+                    event: breached ? 'breach' : hitTarget ? 'target' : dllHit ? 'dll' : 'trade'
                   };
                   if (samplePath.length < maxSamplePoints) {
                     samplePath.push(sampleTrade);
                     sampleTradeStored = true;
+                    lastSampleTrade = sampleTrade;
                   } else {
                     sampleTruncated = true;
                   }
                 }
 
-                if (balance >= c.target) {
+                if (breached) {
+                  fails++;
+                  failureDays.push(day);
+                  if (capture) {
+                    if (!sampleTradeStored) samplePath.push(sampleTrade);
+                    sampleOutcome = { type: 'breach', day, balance, mll };
+                  }
+                  resolved = true;
+                  break;
+                }
+
+                if (hitTarget) {
                   passes++;
                   successDays.push(day);
                   if (capture) {
-                    sampleTrade.event = 'target';
                     if (!sampleTradeStored) samplePath.push(sampleTrade);
                     sampleOutcome = { type: 'pass', day, balance };
                   }
@@ -1705,40 +2045,58 @@
                   break;
                 }
 
-                if (balance <= mll) {
-                  fails++;
-                  failureDays.push(day);
-                  if (capture) {
-                    sampleTrade.event = 'breach';
-                    if (!sampleTradeStored) samplePath.push(sampleTrade);
-                    sampleOutcome = { type: 'breach', day, balance };
-                  }
-                  resolved = true;
-                  break;
-                }
+                if (dllHit) break;
               }
 
               if (!resolved) {
-                const previousMll = mll;
-                const trailedFloor = Math.min(balance - 2000, c.lockedMLL);
-                mll = Math.max(mll, trailedFloor);
-                if (capture) {
-                  sampleEod.push({
+                const dayPnl = balance - dayStartBalance;
+                if (dayPnl > largestDayProfit) largestDayProfit = dayPnl;
+
+                if (c.drawdownType === 'eod') {
+                  const previousMll = mll;
+                  trailingReference = Math.max(trailingReference, balance);
+                  mll = nextMll(mll, trailingReference);
+                  if (capture && sampleMll.length < maxSamplePoints) {
+                    sampleMll.push({
                     x: day,
                     day,
+                    trade: null,
+                    updateType: 'EOD',
                     closeBalance: balance,
+                    referenceBalance: trailingReference,
                     previousMll,
                     newMll: mll,
                     change: mll - previousMll,
-                    locked: mll >= c.lockedMLL
+                    locked: c.lockedMllEnabled && mll >= c.lockedMLL
                   });
+                  } else if (capture) {
+                    sampleTruncated = true;
+                  }
+                }
+
+                if (c.consistencyEnabled && balance >= c.target) {
+                  const totalProfit = balance - c.startBalance;
+                  const consistency = totalProfit > 0 ? largestDayProfit / totalProfit * 100 : Infinity;
+                  if (consistency <= c.consistencyPercent + 1e-9) {
+                    passes++;
+                    successDays.push(day);
+                    resolved = true;
+                    if (capture) {
+                      if (lastSampleTrade) lastSampleTrade.event = 'target';
+                      sampleOutcome = { type: 'pass', day, balance, consistency, largestDayProfit, totalProfit };
+                    }
+                  }
                 }
               }
             }
 
             if (!resolved) {
               timeouts++;
-              if (capture) sampleOutcome = { type: 'unresolved', day: c.maxDays, balance };
+              if (capture) {
+                const totalProfit = balance - c.startBalance;
+                const consistency = totalProfit > 0 ? largestDayProfit / totalProfit * 100 : null;
+                sampleOutcome = { type: 'unresolved', day: c.maxDays, balance, consistency, largestDayProfit, totalProfit };
+              }
             }
 
             if ((run + 1) % 2500 === 0) {
@@ -1748,7 +2106,7 @@
 
           successDays.sort((a, b) => a - b);
           failureDays.sort((a, b) => a - b);
-          self.postMessage({ type: 'done', passes, fails, timeouts, successDays, failureDays, samplePath, sampleEod, sampleOutcome, sampleTruncated });
+          self.postMessage({ type: 'done', passes, fails, timeouts, successDays, failureDays, samplePath, sampleMll, sampleOutcome, sampleTruncated });
         };
       }
 
@@ -1912,6 +2270,9 @@
       function showHistogramTooltip(hit, event) {
         const b = hit.bin;
         const dayLabel = b.start === b.end ? `Day ${b.start}` : `Days ${b.start}–${b.end}`;
+        const dayTotal = b.passCount + b.breachCount;
+        const passDayShare = dayTotal ? b.passCount / dayTotal * 100 : 0;
+        const breachDayShare = dayTotal ? b.breachCount / dayTotal * 100 : 0;
         const passShare = hit.totalPasses ? b.passCount / hit.totalPasses * 100 : 0;
         const passCumulativeShare = hit.totalPasses ? hit.cumulativePasses / hit.totalPasses * 100 : 0;
         const breachShare = hit.totalBreaches ? b.breachCount / hit.totalBreaches * 100 : 0;
@@ -1919,11 +2280,14 @@
 
         histogramTooltip.innerHTML = `
           <strong>${dayLabel}</strong>
-          <div class="life-tooltip-row"><span>Passed accounts</span><span class="positive">${integer.format(b.passCount)}</span></div>
+          <div class="life-tooltip-row"><span>Total accounts</span><span>${integer.format(dayTotal)}</span></div>
+          <div class="life-tooltip-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--line)"><span>Passed accounts</span><span class="positive">${integer.format(b.passCount)}</span></div>
+          <div class="life-tooltip-row"><span>Percent of day total</span><span>${passDayShare.toFixed(1)}%</span></div>
           <div class="life-tooltip-row"><span>Share of all passes</span><span>${passShare.toFixed(1)}%</span></div>
           <div class="life-tooltip-row"><span>Passed by this range</span><span>${integer.format(hit.cumulativePasses)}</span></div>
           <div class="life-tooltip-row"><span>Cumulative pass share</span><span>${passCumulativeShare.toFixed(1)}%</span></div>
           <div class="life-tooltip-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--line)"><span>Breached accounts</span><span class="negative">${integer.format(b.breachCount)}</span></div>
+          <div class="life-tooltip-row"><span>Percent of day total</span><span>${breachDayShare.toFixed(1)}%</span></div>
           <div class="life-tooltip-row"><span>Share of all breaches</span><span>${breachShare.toFixed(1)}%</span></div>
           <div class="life-tooltip-row"><span>Breached by this range</span><span>${integer.format(hit.cumulativeBreaches)}</span></div>
           <div class="life-tooltip-row"><span>Cumulative breach share</span><span>${breachCumulativeShare.toFixed(1)}%</span></div>`;
@@ -1955,17 +2319,18 @@
         lifeCtx.clearRect(0, 0, width, height);
         lifeHitTargets = [];
 
-        if (!sample || !sample.path || sample.path.length < 2) return;
+        if (!sample || !sample.path || sample.path.length < 2 || !sample.config) return;
 
         const points = sample.path;
-        const eodPoints = sample.eod || [];
+        const mllPoints = sample.mll || [];
+        const config = sample.config;
         const pad = { top: 18, right: 18, bottom: 45, left: 108 };
         const plotW = width - pad.left - pad.right;
         const plotH = height - pad.top - pad.bottom;
         const maxDay = Math.max(1, points[points.length - 1].x);
-        const mllValues = eodPoints.flatMap(p => [p.previousMll, p.newMll]);
-        const rawMin = Math.min(...points.map(p => Math.min(p.balance, p.mll)), ...mllValues, START_MLL);
-        const rawMax = Math.max(...points.map(p => p.balance), TARGET);
+        const mllValues = mllPoints.flatMap(p => [p.previousMll, p.newMll]);
+        const rawMin = Math.min(...points.map(p => Math.min(p.balance, p.mll)), ...mllValues, config.startMLL);
+        const rawMax = Math.max(...points.map(p => p.balance), config.target);
         const yPad = Math.max(200, (rawMax - rawMin) * .08);
         const yMin = Math.floor((rawMin - yPad) / 100) * 100;
         const yMax = Math.ceil((rawMax + yPad) / 100) * 100;
@@ -2020,8 +2385,8 @@
         lifeCtx.strokeStyle = css('--amber');
         lifeCtx.lineWidth = 1.5;
         lifeCtx.beginPath();
-        lifeCtx.moveTo(pad.left, y(TARGET));
-        lifeCtx.lineTo(width - pad.right, y(TARGET));
+        lifeCtx.moveTo(pad.left, y(config.target));
+        lifeCtx.lineTo(width - pad.right, y(config.target));
         lifeCtx.stroke();
         lifeCtx.restore();
 
@@ -2029,10 +2394,10 @@
         lifeCtx.lineWidth = 2;
         lifeCtx.lineJoin = 'miter';
         lifeCtx.beginPath();
-        let activeMll = START_MLL;
+        let activeMll = config.startMLL;
         let activeX = 0;
         lifeCtx.moveTo(x(0), y(activeMll));
-        for (const point of eodPoints) {
+        for (const point of mllPoints) {
           lifeCtx.lineTo(x(point.x), y(activeMll));
           lifeCtx.lineTo(x(point.x), y(point.newMll));
           activeMll = point.newMll;
@@ -2041,7 +2406,7 @@
         if (activeX < maxDay) lifeCtx.lineTo(x(maxDay), y(activeMll));
         lifeCtx.stroke();
 
-        for (const point of eodPoints) {
+        for (const point of mllPoints) {
           const px = x(point.x);
           const py = y(point.newMll);
           lifeCtx.fillStyle = css('--red');
@@ -2070,13 +2435,14 @@
           const px = x(point.x);
           const py = y(point.balance);
           const terminal = point.event === 'target' || point.event === 'breach';
+          const dllStop = point.event === 'dll';
           lifeCtx.fillStyle = terminal
             ? point.event === 'target' ? css('--green') : css('--red')
-            : css('--blue');
+            : dllStop ? css('--amber') : css('--blue');
           lifeCtx.strokeStyle = css('--panel');
           lifeCtx.lineWidth = 1.5;
           lifeCtx.beginPath();
-          lifeCtx.arc(px, py, terminal ? 5.5 : 3.8, 0, Math.PI * 2);
+          lifeCtx.arc(px, py, terminal ? 5.5 : dllStop ? 4.8 : 3.8, 0, Math.PI * 2);
           lifeCtx.fill();
           lifeCtx.stroke();
           lifeHitTargets.push({ x: px, y: py, radius: 9, type: 'trade', data: point });
@@ -2101,6 +2467,7 @@
       }
 
       function showLifeTooltip(hit, event) {
+        const config = lastLife?.config || lastConfig || readConfig();
         if (hit.type === 'trade') {
           const p = hit.data;
           const pnlClass = p.pnl >= 0 ? 'positive' : 'negative';
@@ -2113,20 +2480,23 @@
             <div class="life-tooltip-row"><span>Gross outcome</span><span>${grossText}</span></div>
             ${p.commission ? `<div class="life-tooltip-row"><span>Commission</span><span>−${money.format(p.commission)}</span></div>` : ''}
             ${p.slippage ? `<div class="life-tooltip-row"><span>Fill deviation</span><span>${slipText}</span></div>` : ''}
+            <div class="life-tooltip-row"><span>Day P&amp;L</span><span class="${p.dayPnl >= 0 ? 'positive' : 'negative'}">${p.dayPnl >= 0 ? '+' : ''}${money.format(p.dayPnl)}</span></div>
             <div class="life-tooltip-row"><span>Balance</span><span>${money.format(p.balance)}</span></div>
             <div class="life-tooltip-row"><span>Active MLL</span><span>${money.format(p.mll)}</span></div>
             <div class="life-tooltip-row"><span>Room to MLL</span><span>${money.format(p.balance - p.mll)}</span></div>
-            <div class="life-tooltip-row"><span>To target</span><span>${money.format(Math.max(0, TARGET - p.balance))}</span></div>`;
+            <div class="life-tooltip-row"><span>To target</span><span>${money.format(Math.max(0, config.target - p.balance))}</span></div>
+            ${p.dllHit ? '<div class="life-tooltip-row"><span>Daily limit</span><span style="color:var(--amber)">Trading suspended for day</span></div>' : ''}`;
         } else {
           const p = hit.data;
           lifeTooltip.innerHTML = `
-            <strong>Day ${p.day} · EOD MLL update</strong>
-            <div class="life-tooltip-row"><span>Closing balance</span><span>${money.format(p.closeBalance)}</span></div>
+            <strong>Day ${p.day}${p.trade ? ` · Trade ${p.trade}` : ''} · ${p.updateType} MLL update</strong>
+            <div class="life-tooltip-row"><span>${p.updateType === 'EOD' ? 'Closing' : 'Trade'} balance</span><span>${money.format(p.closeBalance)}</span></div>
+            <div class="life-tooltip-row"><span>Trailing reference</span><span>${money.format(p.referenceBalance)}</span></div>
             <div class="life-tooltip-row"><span>Previous MLL</span><span>${money.format(p.previousMll)}</span></div>
             <div class="life-tooltip-row"><span>New MLL</span><span>${money.format(p.newMll)}</span></div>
             <div class="life-tooltip-row"><span>Trail change</span><span class="${p.change > 0 ? 'negative' : ''}">${p.change > 0 ? '+' : ''}${money.format(p.change)}</span></div>
-            <div class="life-tooltip-row"><span>Room at close</span><span>${money.format(p.closeBalance - p.newMll)}</span></div>
-            ${p.locked ? '<div class="life-tooltip-row"><span>Status</span><span>Locked at $50,100</span></div>' : ''}`;
+            <div class="life-tooltip-row"><span>Room to MLL</span><span>${money.format(p.closeBalance - p.newMll)}</span></div>
+            ${p.locked ? `<div class="life-tooltip-row"><span>Status</span><span>Locked at ${money.format(config.lockedMLL)}</span></div>` : ''}`;
         }
 
         lifeTooltip.hidden = false;
@@ -2147,6 +2517,7 @@
       }
 
       function renderResults(result, config, elapsedMs) {
+        lastConfig = config;
         const total = config.simulations;
         const resolved = result.passes + result.fails;
         const passRate = result.passes / total * 100;
@@ -2184,7 +2555,7 @@
           timeoutNote.classList.remove('show');
         }
 
-        const breachDays = result.failureDays;
+        const breachDays = result.failureDays || [];
         const hasResolvedOutcomes = days.length > 0 || breachDays.length > 0;
         lastHistogram = makeHistogram(days, breachDays);
         chartEmpty.style.display = hasResolvedOutcomes ? 'none' : 'grid';
@@ -2194,12 +2565,14 @@
           ? `Grouped outcome chart showing ${integer.format(result.passes)} passed accounts and ${integer.format(result.fails)} breached accounts by trading day.`
           : 'No accounts passed or breached in this simulation.');
 
-        lastLife = { path: result.samplePath, eod: result.sampleEod, outcome: result.sampleOutcome };
+        lastLife = { path: result.samplePath, mll: result.sampleMll || [], outcome: result.sampleOutcome, config };
         drawLifeChart(lastLife);
         const outcomeNode = document.getElementById('life-outcome');
         outcomeNode.classList.remove('breached', 'unresolved');
         if (result.sampleOutcome.type === 'pass') {
-          outcomeNode.textContent = `Passed on day ${result.sampleOutcome.day}`;
+          outcomeNode.textContent = config.consistencyEnabled && Number.isFinite(result.sampleOutcome.consistency)
+            ? `Passed on day ${result.sampleOutcome.day} · ${result.sampleOutcome.consistency.toFixed(1)}% consistency`
+            : `Passed on day ${result.sampleOutcome.day}`;
         } else if (result.sampleOutcome.type === 'breach') {
           outcomeNode.textContent = `MLL breached on day ${result.sampleOutcome.day}`;
           outcomeNode.classList.add('breached');
@@ -2211,7 +2584,7 @@
           `Sample account ${result.sampleOutcome.type === 'pass' ? 'reached the target' : result.sampleOutcome.type === 'breach' ? 'breached its maximum loss limit' : 'remained unresolved'} on trading day ${result.sampleOutcome.day}.`);
         document.getElementById('life-help').textContent = result.sampleTruncated
           ? 'This unusually long sample exceeded 50,000 plotted trades, so the middle of its path was shortened. Run again for another sample.'
-          : 'Hover a blue trade point or red EOD point for details. Increase zoom, then scroll horizontally to inspect longer runs.';
+          : `Hover a trade point or red ${config.drawdownType === 'intraday' ? 'intraday' : 'EOD'} MLL point for details. Increase zoom, then scroll horizontally to inspect longer runs.`;
       }
 
       function runSimulation() {
@@ -2277,6 +2650,11 @@
         else updateDerived();
       }));
       tradesMode.addEventListener('change', updateExecutionControls);
+      accountTypeInputs.forEach(input => input.addEventListener('change', updateAccountControls));
+      drawdownType.addEventListener('change', updateAccountControls);
+      dllEnabled.addEventListener('change', updateAccountControls);
+      lockedMllEnabled.addEventListener('change', updateAccountControls);
+      consistencyEnabled.addEventListener('change', updateAccountControls);
       executionProduct.addEventListener('change', updateExecutionControls);
       commissionEnabled.addEventListener('change', updateExecutionControls);
       commissionSource.addEventListener('change', updateExecutionControls);
@@ -2335,6 +2713,11 @@
 
       resetButton.addEventListener('click', () => {
         Object.entries(defaults).forEach(([key, value]) => { fields[key].value = value; });
+        document.getElementById('account-type-funded').checked = true;
+        drawdownType.value = 'eod';
+        dllEnabled.checked = false;
+        lockedMllEnabled.checked = true;
+        consistencyEnabled.checked = false;
         tradesMode.value = 'fixed';
         executionProduct.value = 'MNQ';
         commissionEnabled.checked = false;
@@ -2355,5 +2738,3 @@
   </script>
 </body>
 </html>
-
-
